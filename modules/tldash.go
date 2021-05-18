@@ -39,6 +39,7 @@ var sites = []siteStruct{
 	siteStruct{
 		DisplayName: "MythicIO",
 		Name:        "mythic",
+		Stripe_public_key: "pk_live_51IALndDvA90PXgx9e5tv9qAqPHo2wluhAy7dJ9LttDfRUseYM7yfP5jZgR37idAR714vIksj3lnpAkNGnq7ssbcT001ucNymNw",
 	},
 	siteStruct{
 		DisplayName: "StormAIO",
@@ -47,6 +48,7 @@ var sites = []siteStruct{
 	siteStruct{
 		DisplayName: "OpheliaAIO",
 		Name:        "ophelia",
+		Stripe_public_key: "pk_live_51HjpDtDkr9YTbkRcEatorsN0lShZ84cLB2RE5G1RqvuaQ8yW2ahOuoxI00Nc7w43gUPJSUZjhRTPiJqFHBxrykmP00aDudG1qz",
 	},
 }
 
@@ -213,6 +215,14 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	}
 	fmt.Println(getResponse.Stripe_public_key)
 
+	var cfCookie string
+
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "__cf_bm" {
+			cfCookie = cookie.Value
+		}
+	}
+
 	if stripeToken == "" {
 		type tokenStruct struct {
 			ID string `json:"id"`
@@ -294,7 +304,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		json.Unmarshal([]byte(body), &captchaResponse)
 		captchaSolution = captchaResponse.Solution
 		if captchaSolution == "AAAAAA" {
-			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed solve Captcha!"))
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed solving Captcha!"))
 			return
 		}
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully solved Captcha: ") + colors.White(captchaSolution))
@@ -327,7 +337,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", "__cf_bm=f9a79f16265f72425e989e15d4506545e8638865")
+	req.Header.Set("Cookie", "__cf_bm=" + cfCookie)
 	if discordSession != "" {
 		req.Header.Set("authorization", "Bearer " + discordSession)
 	}
