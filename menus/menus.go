@@ -14,13 +14,21 @@ func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, p
 	fmt.Println(colors.Red("----------------------------------------------------------------"))
 	fmt.Println(colors.Prefix() + colors.Red("What would you like to do?"))
 	fmt.Println(colors.Prefix() + colors.White("[1] Start the TL Module"))
-	fmt.Println(colors.Prefix() + colors.White("[%] Show + Edit Settings"))
+	//fmt.Println(colors.Prefix() + colors.White("[2] Start the Hyper/Meta Labs Module"))
+	fmt.Println(colors.Prefix() + colors.White("[%] Create a new Profile"))
 	ans := askForSilent()
 	switch ans {
 	case "1":
 		modules.TLInput(userData, profiles, proxies)
+		MainMenu(userData, profiles, proxies)
+		/*
+	case "2":
+		modules.HyperInput(userData, profiles, proxies)
+		MainMenu(userData, profiles, proxies)
+		*/
 	case "%":
-		fmt.Println("Settings")
+		loader.CreateProfile(profiles)
+		MainMenu(userData, profiles, proxies)
 	default:
 		fmt.Println("Wrong bruh")
 	}

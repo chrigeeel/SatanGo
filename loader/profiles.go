@@ -30,6 +30,7 @@ type ProfileStruct struct {
 	Name           string `json:"name"`
 	DiscordToken   string `json:"discordToken"`
 	DiscordSession string
+	HyperUserId string
 	StripeToken string
 	BillingAddress BillingAddressStruct `json:"billingAddress"`
 	PaymentDetails PaymentDetailsStruct `json:"paymentDetails"`
@@ -65,7 +66,6 @@ func CreateProfile(profiles []ProfileStruct) {
 	profile.PaymentDetails.CardExpYear = askFor("Please input your card expiry year (format: \"2022\")")
 	profile.PaymentDetails.CardCvv = askFor("Please input your CVV")
 	profiles = append(profiles, profile)
-	fmt.Println(profiles)
 	jsonData, _ := json.MarshalIndent(profiles, "", "    ")
 	_ = ioutil.WriteFile("./settings/profiles.json", jsonData, 0644)
 }

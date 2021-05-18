@@ -1,17 +1,16 @@
 package modules
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/chrigeeel/satango/colors"
@@ -34,21 +33,20 @@ type taskStruct struct {
 
 var sites = []siteStruct{
 	siteStruct{
-		DisplayName: "Demo",
-		Name:        "demo",
-		Stripe_public_key: "pk_test_7A8YMlo1cOLyO4M3elOm59Yp00RIKRSKWg",
+		DisplayName: "HydraScripts",
+		Name:        "hydrascripts",
 	},
 	siteStruct{
 		DisplayName: "MythicIO",
 		Name:        "mythic",
 	},
 	siteStruct{
-		DisplayName: "Demo2",
-		Name:        "demo",
+		DisplayName: "StormAIO",
+		Name:        "stormaio",
 	},
 	siteStruct{
-		DisplayName: "Demo3",
-		Name:        "demo",
+		DisplayName: "OpheliaAIO",
+		Name:        "ophelia",
 	},
 }
 
@@ -87,6 +85,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 	}
 	if len(profiles) == 0 {
 		fmt.Println(colors.Prefix() + colors.Red("You have no valid Profiles! Please check them and their corresponding Discord Tokens!"))
+		time.Sleep(time.Second * 3)
 		return
 	}
 	if site.Stripe_public_key != "" {
@@ -94,6 +93,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 	}
 	if len(profiles) == 0 {
 		fmt.Println(colors.Prefix() + colors.Red("You have no valid Profiles! Please check them and their corresponding Payment Info!"))
+		time.Sleep(time.Second * 3)
 		return
 	}
 	var taskLimit int
@@ -190,6 +190,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	if discordSession != "" {
 		req.Header.Set("authorization", "Bearer " + discordSession)
 	}
+	req.Header.Set("Cookie", "__cf_bm=f9a79f16265f72425e989e15d4506545e8638865")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -210,6 +211,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Wrong password or release OOS!"))
 		return
 	}
+	fmt.Println(getResponse.Stripe_public_key)
 
 	if stripeToken == "" {
 		type tokenStruct struct {
@@ -261,7 +263,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		fmt.Println(colors.TaskPrefix(id) + colors.White("Capcha enabled!"))
 
 		captchaClient := &http.Client{}
-		url := "https://talhmxsxth.execute-api.eu-central-1.amazonaws.com/user/solve"
+		url := "http://35.80.125.25:5069/v1/solve"
 		webhookUrl := "https://discord.com/api/webhooks/820084465497669663/0VZgCoLaBWAuIJ_osAzhaGEGOjsgQp7v_N6gL_GTxIQoUX6rh_AQZJGn74O4f_1Q9AmM"
 
 		payload, _ := json.Marshal(map[string]string{
@@ -325,6 +327,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "__cf_bm=f9a79f16265f72425e989e15d4506545e8638865")
 	if discordSession != "" {
 		req.Header.Set("authorization", "Bearer " + discordSession)
 	}
@@ -346,6 +349,17 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 
 	if postResponse.Success == true {
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out, Check your email!"))
+		payload, _ := json.Marshal(map[string]string{
+			"site": task.Site,
+			"module": "TL Dash",
+			"speed": "0",
+			"mode": "Brr mode",
+			"password": "Unknown",
+			"user": userData.Username,
+		})
+		req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
+		req.Header.Set("content-type", "application/json")
+		client.Do(req)
 		return
 	}
 	if postResponse.Error.Message != "" {
@@ -485,20 +499,4 @@ func TLStripe(stripeToken string, profiles []loader.ProfileStruct) []loader.Prof
 	}
 
 	return profiles
-}
-
-func removeIndex(profiles []loader.ProfileStruct, s int) []loader.ProfileStruct {
-	return append(profiles[:s], profiles[s+1:]...)
-}
-
-func testReq() {
-	client := CoolClient("123")
-	fmt.Println(colors.Prefix(), client)
-}
-
-func askForSilent() string {
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print(colors.Prefix() + colors.White("> "))
-	scanner.Scan()
-	return scanner.Text()
 }
