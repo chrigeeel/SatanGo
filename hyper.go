@@ -55,7 +55,7 @@ func main() {
 	}
 
 	dUrl := "https://discord.com/api/v9/oauth2/authorize?client_id=648234176805470248&response_type=code&redirect_uri=https%3A%2F%2Fapi.hyper.co%2Fportal%2Fauth%2Fdiscord%2Fcallback&scope=identify%20email%20guilds%20guilds.join&state=%7B%22account%22%3A%22" + accountId + "%22%7D"
-	token := "mfa.Ihmo-BKnwS8tDKx3zKNG0HY5__ZjAyQzwFszPoIxhYVCr6cnuEW3R73NQioQg7JCUKJY-a5i3PhQ4K4Kshxn"
+	token := "mfa.BUaom7Crxxf-UX9Ii6SBrS22fiXxtKGHX-yq-HCki4Tq1Q4ctx6SZKdmkCYhvq06_C51oXmB_y1VcIfkj6Iu"
 
 	payload, _ := json.Marshal(map[string]string{
 		"permssions": "0",

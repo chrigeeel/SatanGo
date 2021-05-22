@@ -26,7 +26,6 @@ func main() {
 	auth := loader.AuthKey(userData.Key)
 	username := auth.User.Username
 	userData.Username = username
-
 	fmt.Println(colors.Prefix() + colors.White("Welcome back, ") + colors.Red(username) + "!")
 	loader.LoadProfiles()
 	fmt.Println(colors.Prefix() + colors.Yellow("Loading your data..."))

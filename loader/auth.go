@@ -51,7 +51,7 @@ func debugChecker() {
 func AuthKey(key string) authStruct {
 	debugChecker()
 	fmt.Println(colors.Prefix() + colors.Yellow("Authenticating your key..."))
-	resp, err := http.Get("http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/auth?key=" + key)
+	resp, err := http.Get("http://50.16.47.99/auth/" + key)
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("The Auth API is down atm! Please try again."))
 	}
