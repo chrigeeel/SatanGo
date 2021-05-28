@@ -18,10 +18,9 @@ import (
 )
 
 type siteStruct struct {
-	DisplayName       string `json:"displayName"`
-	Name              string `json:"name"`
-	Url               string `json:"url"`
-	Stripe_public_key string `json:"stripe_public_key"`
+	DisplayName string `json:"displayName"`
+	BackendName string `json:"backendName"`
+	Stripe_public_key string `json:"stripe_public_key,omitempty"`
 }
 
 type taskStruct struct {
@@ -31,60 +30,25 @@ type taskStruct struct {
 	StripeToken string `json:"stripeToken"`
 }
 
-var sites = []siteStruct{
-	siteStruct{
-		DisplayName: "Demo",
-		Name:        "demo",
-	},
-	siteStruct{
-		DisplayName: "HydraScripts",
-		Name:        "hydrascripts",
-	},
-	siteStruct{
-		DisplayName: "Impact Dash",
-		Name:        "impactsolutions",
-	},
-	siteStruct{
-		DisplayName: "Impact Dashboard",
-		Name:        "impactsolutions2",
-	},
-	siteStruct{
-		DisplayName: "Koi Solutions",
-		Name:        "koisolutions",
-	},
-	siteStruct{
-		DisplayName: "MythicIO",
-		Name:        "mythic",
-		Stripe_public_key: "pk_live_51IALndDvA90PXgx9e5tv9qAqPHo2wluhAy7dJ9LttDfRUseYM7yfP5jZgR37idAR714vIksj3lnpAkNGnq7ssbcT001ucNymNw",
-	},
-	siteStruct{
-		DisplayName: "OpheliaAIO",
-		Name:        "ophelia",
-		Stripe_public_key: "pk_live_51HjpDtDkr9YTbkRcEatorsN0lShZ84cLB2RE5G1RqvuaQ8yW2ahOuoxI00Nc7w43gUPJSUZjhRTPiJqFHBxrykmP00aDudG1qz",
-	},
-	siteStruct{
-		DisplayName: "PhoenixAIO 1",
-		Name:        "phoenixbot",
-	},
-	siteStruct{
-		DisplayName: "PhoenixAIO 2",
-		Name:        "phoenixbot2",
-	},
-	siteStruct{
-		DisplayName: "Radar Flips",
-		Name:        "radarflips",
-	},
-	siteStruct{
-		DisplayName: "StormAIO",
-		Name:        "stormaio",
-	},
-	siteStruct{
-		DisplayName: "TweetCatcher",
-		Name:        "tweetcatcher",
-	},
-}
+var sites []siteStruct
 
 func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
+	fmt.Println(colors.Prefix() + colors.Yellow("Loading sites..."))
+	resp, err := http.Get("http://50.16.47.99/sites/tl")
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Error loading sites! exiting..."))
+		time.Sleep(time.Second * 3)
+		return
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Error loading sites! exiting..."))
+		time.Sleep(time.Second * 3)
+		return
+	}
+	var sites []siteStruct
+	json.Unmarshal(body, &sites)
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?"))
 	for i := range sites {
 		fmt.Println(colors.Prefix() + colors.White("["+strconv.Itoa(i)+"] "+sites[i].DisplayName))
@@ -94,7 +58,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 	for validAns := false; validAns == false; {
 		ans := askForSilent()
 		if ans == "%" {
-			TLInput(userData, profiles, proxies)
+			fmt.Println("ur bad")
 		}
 		validAns = true
 		ansInt, _ = strconv.Atoi(ans)
@@ -169,7 +133,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 			proxyCounter = 0
 		}
 		tasks = append(tasks, taskStruct{
-			Site:    site.Name,
+			Site:    site.BackendName,
 			Proxy:   proxies[proxyCounter],
 			Profile: profiles[profileCounter],
 		})
@@ -177,7 +141,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 		profileCounter++
 	}
 	for exit := false; exit == false; {
-		password := GetPw()
+		password := GetPw(site.BackendName)
 		if password == "exit" {
 			exit = true
 		} else {
@@ -215,6 +179,8 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	discordSession := task.Profile.DiscordSession
 	client := CoolClient(proxy)
 
+	beginTime := time.Now()
+
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading Release..."))
 
 	TLUrl := "https://button-backend.tldash.ai/api/register/" + site + "/" + password
@@ -249,7 +215,8 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Wrong password or release OOS!"))
 		return
 	}
-	fmt.Println(getResponse.Stripe_public_key)
+	
+	go PwSharingSend(password, userData.Username, site)
 
 	var cfCookie string
 
@@ -394,11 +361,19 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	json.Unmarshal([]byte(body), &postResponse)
 
 	if postResponse.Success == true {
+		stopTime := time.Now()
+		diff := stopTime.Sub(beginTime)
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out, Check your email!"))
+		go SendWebhook(userData.Webhook, WebhookContentStruct{
+			Speed: string(diff),
+			Module: "TL Dashboards",
+			Site: site,
+			Profile: profile.Name,
+		})
 		payload, _ := json.Marshal(map[string]string{
 			"site": task.Site,
 			"module": "TL Dash",
-			"speed": "0",
+			"speed": diff.String(),
 			"mode": "Brr mode",
 			"password": "Unknown",
 			"user": userData.Username,

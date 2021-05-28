@@ -34,5 +34,10 @@ func main() {
 	proxies := loader.LoadProxies()
 
 	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded profiles, proxies and tokens"))
+	
+	//modules.PWSharingConnect()
+	go modules.PwSharingReceive()
+	time.Sleep(time.Millisecond * 1000)
+
 	menus.MainMenu(userData, profiles, proxies)
 }

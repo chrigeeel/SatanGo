@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"regexp"
@@ -16,6 +17,22 @@ import (
 	tls "github.com/refraction-networking/utls"
 	"github.com/x04/cclient"
 	"golang.design/x/clipboard"
+	"golang.org/x/net/websocket"
+)
+
+type Message struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	ReleaseId string `json:"releaseId"`
+	Site string `json:"site"`
+}
+
+//initializes variables for use in GetPw & other
+var (
+	newLink string
+	newShare Message
+	lookingForPw bool
+	WS *websocket.Conn
 )
 
 func CoolClient(proxy string) http.Client {
@@ -49,19 +66,18 @@ func CoolClient(proxy string) http.Client {
 	return client
 }
 
-//initializes newLink variable for use in GetPw)_ & 
-var newLink string
-var lookingForPw bool
-
-func GetPw() string {
+func GetPw(site string) string {
 	fmt.Println(colors.Prefix() + colors.Red("Waiting for Password"))
 	fmt.Println(colors.Prefix() + colors.White("Copy the text \"") + colors.Red("exit") + colors.White("\" to exit"))
 	lookingForPw = true
 	clipOldB := clipboard.Read(clipboard.FmtText)
 	clipOld := string(clipOldB)
+	newLink = "bruh"
 	oldLink := newLink
+	oldShare := newShare
 	r := regexp.MustCompile("password=(.*)")
 	var password string
+	password = "bruh"
 	for gotPw := false; gotPw == false; {
 		clipNewB := clipboard.Read(clipboard.FmtText)
 		clipNew := string(clipNewB)
@@ -83,9 +99,22 @@ func GetPw() string {
 				gotPw = true
 			}
 		}
-		time.Sleep(time.Microsecond * 10)
+		if (newShare != Message{}) && (oldShare != Message{}) {
+			if (newShare.Password != oldShare.Password) && (newShare.Site == site) {
+				fmt.Println(colors.Prefix() + colors.Green("Received password via pw sharing: ") + colors.White("\"") + colors.Green(newShare.Password) + colors.White("\"!"))
+				fmt.Println(colors.Prefix() + colors.Green("The password was sent to you by the user ") + colors.White("\"") + colors.Green(newShare.Username) + colors.White("\", go say thanks!"))
+				password = newShare.Password
+				m := r.FindStringSubmatch(password)
+				if len(m) == 2 {
+					password = m[1]
+				}
+				gotPw = true
+			}
+		}
+		time.Sleep(time.Microsecond * 5)
 	}
 	lookingForPw = false
+	password = strings.ReplaceAll(password, " ", "")
 	fmt.Println(colors.Prefix() + colors.White("Detected password \"") + colors.Red(password) + colors.White("\""))
 	return password
 }
@@ -101,9 +130,60 @@ func askForSilent() string {
 	return scanner.Text()
 }
 
+func PwSharingReceive() {
+	fmt.Println(colors.Prefix() + colors.Yellow("Connecting to PW-Sharing server..."))
+	WS, err := connect()
+	if err != nil {
+	  fmt.Println(colors.Red("Failed to connect to PW-Sharing server!"))
+	  return
+	}
+	defer WS.Close()
+	if WS != nil {
+		fmt.Println(colors.Prefix() + colors.Green("Successfully connected to PW-Sharing server!"))
+	}
+	var m Message
+	for {
+		err := websocket.JSON.Receive(WS, &m)
+		if err != nil {
+			fmt.Println(colors.Prefix()  + colors.Red("Error receiving password!"))
+			fmt.Println(colors.Prefix() + colors.Green("PLEASE DM CHRIGEEEL"))
+			time.Sleep(time.Second * 1000)
+			return
+		}
+		if lookingForPw == true {
+			newShare = m
+		}
+	}
+}
+
+func PwSharingSend(password string, username string, site string) {
+	m := Message{
+		Username: username,
+		Password: password,
+		Site: site,
+	}
+	err := websocket.JSON.Send(WS, m)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Failed sending password to PW-Sharing!"))
+		return
+	}
+	fmt.Println(colors.Prefix() + colors.Yellow("Successfully sent password to PW-Sharing"))
+}
+
+func connect() (*websocket.Conn, error) {
+	return websocket.Dial(fmt.Sprintf("ws://52.72.153.196"), "", mockedIP())
+}
+
+func mockedIP() string {
+	var arr [4]int
+	for i := 0; i < 4; i++ {
+		rand.Seed(time.Now().UnixNano())
+		arr[i] = rand.Intn(256)
+	}
+	return fmt.Sprintf("http://%d.%d.%d.%d", arr[0], arr[1], arr[2], arr[3])
+}
 
 func Server() {
-
 	app := fiber.New()
 
 	app.Post("/sendpass", handleLink)

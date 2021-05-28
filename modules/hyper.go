@@ -87,9 +87,11 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 	}
 
 	var taskLimit int
-	taskLimit = 5
+	taskLimit = len(profiles) * 2
 
-	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red("."))
+	taskLimit = 50
+
+	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" because you have ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" valid profiles"))
 
 	var taskAmount int
 	for validAns := false; validAns == false; {
@@ -109,7 +111,7 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 	var profileCounter int
 
 	for exit := false; exit == false; {
-		password := GetPw()
+		password := GetPw(site)
 		if password == "exit" {
 			exit = true
 		} else {
@@ -164,13 +166,13 @@ func HyperStripe(stripeAccount string, profiles []loader.ProfileStruct) []loader
 		url := "https://api.stripe.com/v1/payment_methods"
 		payload := strings.NewReader(
 		`type=card` + 
-		`&billing_details[name]=` + profiles[id].BillingAddress.Name + 
-		`&card[number]=` + profiles[id].PaymentDetails.CardNumber +  
-		`&card[cvc]=` + profiles[id].PaymentDetails.CardCvv +  
-		`&card[exp_month]=` + profiles[id].PaymentDetails.CardExpMonth +  
-		`&card[exp_year]=` + profiles[id].PaymentDetails.CardExpYear +  
-		`&key=pk_live_51GXa1YLZrAkO7Fk2tcUO7vabkO7sgDamOww2OPYQVFhPZOllT75f7owzIOlP75MMdDXHKoy6wPt40HsuQDObpkHv004T74fAzs` +
-		`&_stripe_account=` + stripeAccount)
+		`&billing_details[name]=` + profiles[id].BillingAddress.Name +
+		`&billing_details[email]=` + profiles[id].BillingAddress.Email +
+		`&card[number]=` + profiles[id].PaymentDetails.CardNumber + 
+		`&card[cvc]=` + profiles[id].PaymentDetails.CardCvv + 
+		`&card[exp_month]=` + profiles[id].PaymentDetails.CardExpMonth + 
+		`&card[exp_year]=` + profiles[id].PaymentDetails.CardExpYear[len(profiles[id].PaymentDetails.CardExpYear)-2:] + 
+		`&key=pk_live_51GXa1YLZrAkO7Fk2tcUO7vabkO7sgDamOww2OPYQVFhPZOllT75f7owzIOlP75MMdDXHKoy6wPt40HsuQDObpkHv004T74fAzs`)
 	
 		req, err := http.NewRequest("POST", url, payload)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -196,18 +198,68 @@ func HyperStripe(stripeAccount string, profiles []loader.ProfileStruct) []loader
 			return
 		}
 		profiles[id].StripeToken = token.ID
-		fmt.Println(colors.Prefix() + colors.Green("Successfully fetched Stripe token for profile ")+colors.White(profiles[id].Name))
+		fmt.Println(colors.Prefix() + colors.Green("Successfully fetched Stripe token one for profile ")+colors.White(profiles[id].Name))
+		return
+	}
+
+	tokenLocal2 := func(wg *sync.WaitGroup, id int) {
+		defer wg.Done()
+		type tokenStruct struct {
+			ID string `json:"id"`
+		}
+	
+		client := &http.Client{}
+		url := "https://api.stripe.com/v1/payment_methods"
+		payload := strings.NewReader(
+		`type=card` + 
+		`&billing_details[name]=` + profiles[id].BillingAddress.Name +
+		`&billing_details[email]=` + profiles[id].BillingAddress.Email +
+		`&card[number]=` + profiles[id].PaymentDetails.CardNumber + 
+		`&card[cvc]=` + profiles[id].PaymentDetails.CardCvv + 
+		`&card[exp_month]=` + profiles[id].PaymentDetails.CardExpMonth + 
+		`&card[exp_year]=` + profiles[id].PaymentDetails.CardExpYear[len(profiles[id].PaymentDetails.CardExpYear)-2:] + 
+		`&key=pk_live_51GXa1YLZrAkO7Fk2tcUO7vabkO7sgDamOww2OPYQVFhPZOllT75f7owzIOlP75MMdDXHKoy6wPt40HsuQDObpkHv004T74fAzs`)
+	
+		req, err := http.NewRequest("POST", url, payload)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	
+		resp, err := client.Do(req)
+		if err != nil {
+		  fmt.Println(err)
+		  return
+		}
+		defer resp.Body.Close()
+	  
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+		  fmt.Println(err)
+		  return
+		}
+
+		var token tokenStruct
+		json.Unmarshal([]byte(body), &token)
+		if token.ID == "" {
+			profiles[id].StripeToken2 = "error"
+			fmt.Println(colors.Prefix() + colors.Red("Stripe rejected your profile ")+colors.White(profiles[id].Name)+colors.Red(" - Not running tasks on this profile"))
+			return
+		}
+		profiles[id].StripeToken2 = token.ID
+		fmt.Println(colors.Prefix() + colors.Green("Successfully fetched Stripe token two for profile ")+colors.White(profiles[id].Name))
 		return
 	}
 
 	for id := range profiles {
 		wg.Add(1)
 		go tokenLocal(&wg, id)
+		wg.Add(1)
+		go tokenLocal2(&wg, id)
 	}
 	wg.Wait()
 
 	for i := len(profiles) - 1; i >= 0; {
 		if profiles[i].StripeToken == "error" {
+			profiles = removeIndex(profiles, i)
+		} else if profiles[i].StripeToken2 == "error" {
 			profiles = removeIndex(profiles, i)
 		}
 		i--
@@ -337,9 +389,11 @@ func HyperLogin(hyperAccountId string, site string, profiles []loader.ProfileStr
 func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, paid bool, site string, hyperAccountId string, profile loader.ProfileStruct) {
 	defer wg.Done()
 
+	beginTime := time.Now()
+
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading Release..."))
 
-	req, err := http.NewRequest("GET", site + "purchase/?password=x6HhvwBebCIYBALLSOMGBALLS", nil)
+	req, err := http.NewRequest("GET", site + "purchase/?password=" + password, nil)
 	if err != nil {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
 	}
@@ -380,6 +434,7 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 				City string `json:"city,omitempty"`
 				Country string `json:"country,omitempty"`
 				Line1 string `json:"line1,omitempty"`
+				Line2 string `json:"line2,omitempty"`
 				Postal_code string `json:"postal_code,omitempty"`
 				State string `json:"state,omitempty"`
 			} `json:"address,omitempty"`
@@ -387,8 +442,9 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 			Name string `json:"name"`
 		} `json:"billing_details,omitempty"`
 		Payment_method string `json:"payment_method,omitempty"`
+		User string `json:"user,omitempty"`
 		Release string `json:"release"`
-		User string `json:"user"`
+		
 	}
 
 	checkoutData := hyperCheckoutStruct{}
@@ -402,16 +458,19 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 		checkoutData.User = profile.HyperUserId
 	}
 
-	if collectBilling == true {
-		checkoutData.Billing_details.Address.City = "Lebron Street 10"
-		checkoutData.Billing_details.Address.Country = profile.BillingAddress.Country
-		checkoutData.Billing_details.Address.Line1 = profile.BillingAddress.Line1
-		checkoutData.Billing_details.Address.Postal_code = profile.BillingAddress.PostCode
-		checkoutData.Billing_details.Address.State = "FL"
-	}
-
 	if paid == true {
 		checkoutData.Payment_method = profile.StripeToken
+	}
+
+	if collectBilling == true {
+		checkoutData.Billing_details.Address.City = profile.BillingAddress.City
+		checkoutData.Billing_details.Address.Country = "US"
+		checkoutData.Billing_details.Address.Line1 = profile.BillingAddress.Line1
+		checkoutData.Billing_details.Address.Postal_code = profile.BillingAddress.PostCode
+		checkoutData.Billing_details.Address.State = profile.BillingAddress.City
+		if paid == true {
+			checkoutData.Payment_method = profile.StripeToken2
+		}
 	}
 
 	payload, _ := json.Marshal(checkoutData)
@@ -433,7 +492,7 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 
 	if botProtection == true {
 		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Bot Protection enabled..."))
-		req.Header.Set("x-amz-cf-id", "U2FsdGVkX18A6EPI5eaaoDeFQDThzRVksg0whkAawfENq8dojmNZ69sBw4I1CzRWmESS6VHL5D75XfMcdmosqQIXSbBlTzuDJJ96X6KdRXDeL3l4Sun2zx7KjQWJd8PvBRz+xI3bjcxU1QawreYPxyRbHpIRCjNavfB0ER5HRfPYVrBU+dNfJNdMIh4Nrfl5aowg+tBGyYhTsoE0Sgai4fVtUNBEPh3fZq+GVXhgmD+XpZ75xtSQKDNhF4EPGvUM4TuKZONXPtJr9SNVSVo7FLhyHDgZ6KM5pY6JWe0+kKqnJN+RxH0KDynUU1+oY3FsNYWuDmtKmdfoGO5Hjde2+10tMJRhZ1hjGF5dxU1jDwajxFaTUtccmGpk+avnNRNjxXsyrKX2jJbp1hptP1C+gghiZWScG9z/WsFaNGtTh+IUN4a388BQFEeDqIUREBNw0RCicNZiZHU1VoGbc330raLCDncSKkN922cHgdKf8RKXkF0WhpUg/j9aA/LD9fv+ohVvIPn12rYKn12aMFYUuCctQ9fR2H2bkwmU/z3p8Nb+ldj2yf5JcnT6E+GNtpK670mG4oem5r11UAzPgqCna9OaeXueoWilV/u+Py/kOG0O9C9i0XcXeuDsmVGrNzM3wC1JFO6z6xigkK3IgZSY8lcI6d8n7Zkdq+poXVtI4co/0r4O3O8mAICw9E7nfajakQupZa/UEuIvD6aCyiqnTZ2a19ZssO/ub1Bwr+1HolxDsdjlOVmt9gblTPWlWIod7LPk1BYKR9TaEZzjR4ajBbWJPR9vKxnaLD5kEDfmVncrZXsjZ0crfbV2TQOkPkTyzjiu1trECExLNhrJNHV2Hk7I/OnZYD9reAm9kP7IOEl5yyj1E3fYos24I0LLd3Fm+vFPj+7r6R9DEWU2vv6QCTshmN+2kgac0GqPE6iuNX+2Hyu+hUhg149lLL9Vk0uM")
+		req.Header.Set("x-amz-cf-id", "U2FsdGVkX19VMUEIMjicKZ7o84tzLuwDXpBwdOjCuwDpm4rq1593pA5gTG2WPmqOuiFdRXCfZUH5M8tkR77AISV+c0CQNgP2VYrE/xI2OSJw6Vrl4MzNf9mYNjKj64jIX1ZpNpoPDn+pLncq2gops62DPqZzWmyrUoQtwV3StY5s7hi/NPxcSYwMq8gYFOLf6hrRUbgToyW9KKjrRqSeIBbcQJulc8+eqH5WezpWrRzC1M/W+bfDf7zAzepjqPPTOOfKfgXFfWGfZ9KLOIdMmwstgLag3XylPGo814gCK3ywpSFzE5s4qgHw+KA3/Bl2kO+BPTKERi4ZJ155wLlKpuFa9lR9vXFAYmHrCnvjP+01tCLNvXomHjedBW/6qknDd2YGmcq/vt6ZxS7oyxagAFGTbwkZBUgQrNW3eAtx1djcDtwHRReSbCjISsQCATvYcG6YrtClGn2r8TbgB8ZJCiZQPc89qJq670HFxCvwjtAAgk8mhutZ8IG09dI61qn244dYJ2ZYTWp3TlUVu99+96/ECXVFQPlUJy2fMsHD2OsKVyN9jCRoVP8VsPqWst5+ePqfdouC+83TA/6b5eyxIQc01il600lnYgNL5ueSsJkr+XQZxHod1Xl2/V5oiqEBKM7zOSmkT06PvwlU9WqwIhaRVfP6RLt2DFkuAU7BJI3fcPNb0QsL2/BvgMGbevW6EQj/YpbDidpwOk+fMyehS+PHhRL2MB1/Flx6uOs3r5EFqqE773WbCXleemKLQXGK812n+6DhnMLh1p0g9lo+Znubs+QSu1XqGgHmsELQ+OSRmCH+Wq4n+nUzpK5E6SFxQc7BkcNbV9NhNlfMSSe7ck7XS0eI6v7v9P3v2WfWr1anm/JkY/OkuJYSE4VgfG59Jay01YZmTrpRoIF0b0OCsZ1kjqr16zl92zOQhkTBN1vHeHEN0/2+/k83rZzvDm7N")
 	}
 
 	resp, err = client.Do(req)
@@ -452,12 +511,12 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 	rdata := new(hyperResponseStruct)
 	json.Unmarshal([]byte(body), &rdata)
 	if rdata.ID == "" {
-		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to execute Checkout!"))
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Out of Stock!"))
 		return
 	}
 
 	for {
-		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Checking for Success..."))
+		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Processing..."))
 		req, err := http.NewRequest("GET", site + "ajax/checkouts/" + rdata.ID, nil)
 		if err != nil{
 			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check Success!"))
@@ -476,12 +535,31 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 		json.Unmarshal([]byte(body), &rdata)
 		if rdata.Status != "processing" {
 			if rdata.Status == "succeeded" {
+				stopTime := time.Now()
+				diff := stopTime.Sub(beginTime)
 				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile \"" + colors.White(profile.Name) + colors.Green("\"")))
+				go SendWebhook(userData.Webhook, WebhookContentStruct{
+					Speed: diff.String(),
+					Module: "Hyper / Meta Labs",
+					Site: site,
+					Profile: profile.Name,
+				})
+				payload, _ := json.Marshal(map[string]string{
+					"site": site,
+					"module": "Hyper / Meta Labs",
+					"speed": diff.String(),
+					"mode": "Normal",
+					"password": "Unknown",
+					"user": userData.Username,
+				})
+				req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
+				req.Header.Set("content-type", "application/json")
+				client.Do(req)
 				return
 			}
 			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \"" + colors.White(profile.Name) + colors.Red("\" Reason: " + rdata.Status)))
 			return
 		}
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Millisecond * 1000)
 	}
 }

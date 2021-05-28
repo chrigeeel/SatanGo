@@ -14,7 +14,7 @@ func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, p
 	fmt.Println(colors.Red("----------------------------------------------------------------"))
 	fmt.Println(colors.Prefix() + colors.Red("What would you like to do?"))
 	fmt.Println(colors.Prefix() + colors.White("[1] Start the TL Module"))
-	fmt.Println(colors.Prefix() + colors.White("[2] Start the Hyper/Meta Labs Module"))
+ 	fmt.Println(colors.Prefix() + colors.White("[2] Start the Hyper/Meta Labs Module"))
 	fmt.Println(colors.Prefix() + colors.White("[%] Create a new Profile"))
 	ans := askForSilent()
 	proxies = loader.LoadProxies()

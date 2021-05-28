@@ -14,6 +14,8 @@ type BillingAddressStruct struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Line1    string `json:"line1"`
+	Line2 string `json:"line2"`
+	City string `json:"city"`
 	PostCode string `json:"postCode"`
 	Country  string `json:"country"`
 }
@@ -29,9 +31,10 @@ type PaymentDetailsStruct struct {
 type ProfileStruct struct {
 	Name           string `json:"name"`
 	DiscordToken   string `json:"discordToken"`
-	DiscordSession string
-	HyperUserId string
-	StripeToken string
+	DiscordSession string `json:"discordSession,omitempty"`
+	HyperUserId string`json:"hyperUserId,omitempty"`
+	StripeToken string`json:"stripeToken,omitempty"`
+	StripeToken2 string `json:"stripetoken2,omitempty"`
 	BillingAddress BillingAddressStruct `json:"billingAddress"`
 	PaymentDetails PaymentDetailsStruct `json:"paymentDetails"`
 }
@@ -58,6 +61,8 @@ func CreateProfile(profiles []ProfileStruct) {
 	profile.BillingAddress.Name = askFor("Please input your name")
 	profile.BillingAddress.Email = askFor("Please input your email")
 	profile.BillingAddress.Line1 = askFor("Please input your address")
+	profile.BillingAddress.Line2 = askFor("Please input your address line two")
+	profile.BillingAddress.City = askFor("Please input your city")
 	profile.BillingAddress.PostCode = askFor("Please input your zip-/postcode")
 	profile.BillingAddress.Country = askFor("Please input your country")
 	profile.PaymentDetails.NameOnCard = askFor("Please input the name on your card")
