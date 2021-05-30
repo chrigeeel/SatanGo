@@ -89,9 +89,7 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 	var taskLimit int
 	taskLimit = len(profiles) * 2
 
-	taskLimit = 50
-
-	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" because you have ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" valid profiles"))
+	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" because you have ") + colors.White(strconv.Itoa(len(profiles))) + colors.Red(" valid profiles"))
 
 	var taskAmount int
 	for validAns := false; validAns == false; {

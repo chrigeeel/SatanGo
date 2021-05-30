@@ -8,6 +8,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/biter777/countries v1.3.4 // indirect
+	github.com/cavaliercoder/grab v2.0.0+incompatible // indirect
 	github.com/d-tsuji/clipboard v0.0.3 // indirect
 	github.com/eiannone/keyboard v0.0.0-20200508000154-caf4b762e807 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect

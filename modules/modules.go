@@ -1,12 +1,8 @@
 package modules
 
 import (
-	"bufio"
 	"fmt"
-	"log"
 	"math/rand"
-	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -14,8 +10,6 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/gofiber/fiber/v2"
-	tls "github.com/refraction-networking/utls"
-	"github.com/x04/cclient"
 	"golang.design/x/clipboard"
 	"golang.org/x/net/websocket"
 )
@@ -34,37 +28,6 @@ var (
 	lookingForPw bool
 	WS *websocket.Conn
 )
-
-func CoolClient(proxy string) http.Client {
-	prxSlices := strings.Split(proxy, ":")
-	var proxyFormatted string
-	if len(prxSlices) == 4 {
-		proxyFormatted = "http://" + prxSlices[2] + ":" + prxSlices[3] + "@" + prxSlices[0] + ":" + prxSlices[1]
-	} else if len(prxSlices) == 2 {
-		proxyFormatted = "http://" + prxSlices[0] + ":" + prxSlices[1]
-	} else if proxy == "localhost" {
-		proxyFormatted = ""
-	} else {
-		fmt.Println(colors.Prefix() + colors.White("Invalid Proxy: "+proxy))
-		client, err := cclient.NewClient(tls.HelloRandomizedNoALPN)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return client
-	}
-	if proxyFormatted != "" {
-		client, err := cclient.NewClient(tls.HelloRandomizedNoALPN, proxyFormatted)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return client
-	}
-	client, err := cclient.NewClient(tls.HelloRandomizedNoALPN)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return client
-}
 
 func GetPw(site string) string {
 	fmt.Println(colors.Prefix() + colors.Red("Waiting for Password"))
@@ -123,16 +86,10 @@ func removeIndex(profiles []loader.ProfileStruct, s int) []loader.ProfileStruct 
 	return append(profiles[:s], profiles[s+1:]...)
 }
 
-func askForSilent() string {
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print(colors.Prefix() + colors.White("> "))
-	scanner.Scan()
-	return scanner.Text()
-}
-
 func PwSharingReceive() {
+	var err error
 	fmt.Println(colors.Prefix() + colors.Yellow("Connecting to PW-Sharing server..."))
-	WS, err := connect()
+	WS, err = connect()
 	if err != nil {
 	  fmt.Println(colors.Red("Failed to connect to PW-Sharing server!"))
 	  return
@@ -143,15 +100,14 @@ func PwSharingReceive() {
 	}
 	var m Message
 	for {
-		err := websocket.JSON.Receive(WS, &m)
-		if err != nil {
-			fmt.Println(colors.Prefix()  + colors.Red("Error receiving password!"))
-			fmt.Println(colors.Prefix() + colors.Green("PLEASE DM CHRIGEEEL"))
-			time.Sleep(time.Second * 1000)
-			return
-		}
-		if lookingForPw == true {
-			newShare = m
+		if WS != nil {
+			err := websocket.JSON.Receive(WS, &m)
+			if err != nil {
+				time.Sleep(time.Second * 1000)
+			}
+			if lookingForPw == true {
+				newShare = m
+			}
 		}
 	}
 }
@@ -162,12 +118,14 @@ func PwSharingSend(password string, username string, site string) {
 		Password: password,
 		Site: site,
 	}
-	err := websocket.JSON.Send(WS, m)
-	if err != nil {
-		fmt.Println(colors.Prefix() + colors.Red("Failed sending password to PW-Sharing!"))
-		return
+	if WS != nil {
+		err := websocket.JSON.Send(WS, m)
+		if err != nil {
+			fmt.Println(colors.Prefix() + colors.Red("Failed sending password to PW-Sharing!"))
+			return
+		}
+		fmt.Println(colors.Prefix() + colors.Yellow("Successfully sent password to PW-Sharing"))
 	}
-	fmt.Println(colors.Prefix() + colors.Yellow("Successfully sent password to PW-Sharing"))
 }
 
 func connect() (*websocket.Conn, error) {

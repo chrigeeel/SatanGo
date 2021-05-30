@@ -85,8 +85,7 @@ func SendWebhook(url string, content WebhookContentStruct) {
 	}
 
 	client := &http.Client{}
-	whurl := "https://discord.com/api/webhooks/809929672145502208/Q0dkV_bk9-gOpqiWob_PsAujMV3TfHUtDuKGfTNOFby1kTpBkHnRsmre00qmyteGfzqs"
-	req, err := http.NewRequest("POST", whurl, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return
 	}

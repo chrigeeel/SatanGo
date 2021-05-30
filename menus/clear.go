@@ -32,5 +32,21 @@ func CallClear() {
 	} else { //unsupported platform
 		panic("Your platform is unsupported! I can't clear terminal screen :(")
 	}
-	fmt.Println(colors.Red("----------------------------------------------------------------"))
+	var toPrint string
+	toPrint += "       .-._                                                   _,-,\n"
+	toPrint += "        `._`-._                                           _,-'_,'\n"
+	toPrint += "            `._ `-._                                   _,-' _,'\n"
+	toPrint += "                `._  `-._        __.-----.__        _,-'  _,'\n"
+	toPrint += "                `._   `#===\"\"\"           \"\"\"===#'   _,'\n"
+	toPrint += "                    `._/)  ._               _.  (\\_,'\n"
+	toPrint += "                    )*'     **.__     __.**     '*(\n"
+	toPrint += "                    #  .==..__  \"\"   \"\"  __..==,  #\n"
+	toPrint += "                    #   `\"._(_).       .(_)_.\"'   #\n"
+	toPrint += "_____       __      #       ____        __       _#______    ____\n"
+	toPrint += "/ ___/____ _/ /_____ #____  / __ )____  / /_     / ____/ /   /  _/\n"
+	toPrint += "\\__ \\/ __ `/ __/ __ `/ __ \\/ __  / __ \\/ __/    / /   / /    / /\n"
+	toPrint += "___/ / /_/ / /_/ /_/ / / / / /_/ / /_/ / /_     / /___/ /____/ /\n"
+	toPrint += "/____/\\__,_/\\__/\\__,_/_/ /_/_____/\\____/\\__/     \\____/_____/___/"
+	fmt.Println(colors.Red(toPrint))
+	fmt.Println(colors.Red("------------------------------------------------------------------"))
 }

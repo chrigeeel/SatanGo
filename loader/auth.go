@@ -49,7 +49,7 @@ func debugChecker() {
 }
 
 func AuthKey(key string) authStruct {
-	debugChecker()
+	//debugChecker()
 	fmt.Println(colors.Prefix() + colors.Yellow("Authenticating your key..."))
 	resp, err := http.Get("http://50.16.47.99/auth/" + key)
 	if err != nil {

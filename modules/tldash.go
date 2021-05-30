@@ -32,7 +32,7 @@ type taskStruct struct {
 
 var sites []siteStruct
 
-func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
+func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string, mode string) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Loading sites..."))
 	resp, err := http.Get("http://50.16.47.99/sites/tl")
 	if err != nil {
@@ -51,14 +51,14 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 	json.Unmarshal(body, &sites)
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?"))
 	for i := range sites {
-		fmt.Println(colors.Prefix() + colors.White("["+strconv.Itoa(i)+"] "+sites[i].DisplayName))
+		fmt.Println(colors.Prefix() + colors.White("["+strconv.Itoa(i+1)+"] "+sites[i].DisplayName))
 	}
 	fmt.Println(colors.Prefix() + colors.White("[%] Go back"))
 	var ansInt int
 	for validAns := false; validAns == false; {
 		ans := askForSilent()
 		if ans == "%" {
-			fmt.Println("ur bad")
+			return
 		}
 		validAns = true
 		ansInt, _ = strconv.Atoi(ans)
@@ -70,7 +70,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 			validAns = false
 		}
 	}
-	site := sites[ansInt]
+	site := sites[ansInt-1]
 	fmt.Println(colors.Prefix() + colors.Red("(Y/N) Do you want to enable Discord-Login? (Recommended for pure TL-Sites, if unsure ask support)"))
 	ans := askForSilent()
 	var discordLogin bool
@@ -97,9 +97,20 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 		time.Sleep(time.Second * 3)
 		return
 	}
+
+	profiles = askForProfiles(profiles)
+
+	fmt.Println(colors.Prefix() + colors.Yellow("Locating best TL API Server..."))
+	solveIp := TLFindApi()
+
+	if mode == "RAFFLE" {
+		TLInputRaffle(userData, profiles, proxies, discordLogin, site, solveIp)
+		return
+	}
+
 	var taskLimit int
-	if len(proxies) > 30 {
-		taskLimit = 30
+	if len(proxies) > 20 {
+		taskLimit = 40
 	} else {
 		taskLimit = len(proxies) * 2
 	}
@@ -147,16 +158,291 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 		} else {
 			fmt.Println(colors.Prefix() + colors.Yellow("Starting tasks..."))
 			var wg sync.WaitGroup
-			for i := 0; i < taskAmount; i++ {
+			for i := range tasks {
 				wg.Add(1)
-				go TLTask(&wg, userData, i+1, password, tasks[i])
+				go TLTask(&wg, userData, i+1, password, solveIp, tasks[i])
 			}
 			wg.Wait()
 		}
 	}
 }
 
-func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, task taskStruct) {
+func TLInputRaffle(userData loader.UserDataStruct, profiles[]loader.ProfileStruct, proxies []string, discordLogin bool, site siteStruct, solveIp string) {
+	fmt.Println(colors.Prefix() + colors.White("You have ") + colors.Red(strconv.Itoa(len(proxies)) + colors.White(" Proxies including localhost!")))
+	if len(profiles) >= len(proxies) {
+		fmt.Println(colors.Prefix() + colors.White("That means you can only run ") + colors.Red(strconv.Itoa(len(proxies))) + colors.White(" Profiles! Please enter more Proxies in proxies.txt"))
+		var newProfiles []loader.ProfileStruct
+		var toPrint string
+		toPrint = colors.Prefix() + colors.Red("Only running the profiles: \n") + colors.Prefix() 
+		for i := range proxies {
+			newProfiles = append(newProfiles, profiles[i])
+			toPrint = toPrint + colors.White("\"") + colors.Red(profiles[i].Name) + colors.White("\", ")
+		}
+		profiles = newProfiles
+		fmt.Println(toPrint)
+	} else {
+		fmt.Println(colors.Prefix() + colors.Green("That means you can run all profiles!"))
+	}
+	taskAmount := len(profiles)
+	taskAmount = 5000
+	var tasks []taskStruct
+	var profileCounter int
+	var proxyCounter int
+	for i := 0; i < taskAmount; i++ {
+		if profileCounter+1 > len(profiles) {
+			profileCounter = 0
+		}
+		if proxyCounter+1 > len(proxies) {
+			proxyCounter = 0
+		}
+		tasks = append(tasks, taskStruct{
+			Site:    site.BackendName,
+			Proxy:   proxies[proxyCounter],
+			Profile: profiles[profileCounter],
+		})
+		proxyCounter++
+		profileCounter++
+	}
+
+	for exit := false; exit == false; {
+		fmt.Println(colors.Prefix() + colors.Red("Please enter the Raffle Password or link:"))
+		fmt.Println(colors.Prefix() + colors.Red("Enter ") + colors.White("\"") + colors.Red("exit") + colors.White("\"") + colors.Red(" to exit"))
+		password := askForSilent()
+		if password == "exit" {
+			exit = true
+		} else {
+			fmt.Println(colors.Prefix() + colors.Yellow("Starting tasks..."))
+			var wg sync.WaitGroup
+			for i := range tasks {
+				wg.Add(1)
+				go TLTaskRaffle(&wg, userData, i+1, password, solveIp, tasks[i], false)
+			}
+			wg.Wait()
+		}
+	}
+}
+
+func TLTaskRaffle(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, solveIp string, task taskStruct, already bool) {
+	type getResponseStruct struct {
+		Stripe_public_key string `json:"stripe_public_key"`
+		Price_with_symbol string `json:"price_with_symbol"`
+		Raffle_closes string `json:"raffle_closes"`
+		Captcha string `json:"captcha"`
+	}
+	type tlError struct {
+		Message string `json:"message"`
+	}
+	type postResponseStruct struct {
+		Registered bool `json:"registered"`
+		Message string `json:"message"`
+		Error tlError `json:"error"`
+	}
+	if already == false {
+		defer wg.Done()
+	}
+
+	proxy := task.Proxy
+	profile := task.Profile
+	site := task.Site
+	stripeToken := task.Profile.StripeToken
+	discordSession := task.Profile.DiscordSession
+	client, err := CoolClient(proxy)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Invalid Proxy!"))
+		return
+	}
+
+	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading raffle..."))
+
+	TLUrl := "https://button-backend.tldash.ai/api/register/" + site + "/" + password
+	req, err := http.NewRequest("GET", TLUrl, nil)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load raffle!"))
+		return
+	}
+
+	req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36")
+	if discordSession != "" {
+		req.Header.Set("authorization", "Bearer " + discordSession)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load raffle!"))
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load raffle!"))
+		return
+	}
+
+	var getResponse getResponseStruct
+	json.Unmarshal([]byte(body), &getResponse)
+
+	if string(getResponse.Stripe_public_key) == "" {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Wrong password!"))
+		return
+	}
+
+	var cfCookie string
+
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "__cf_bm" {
+			cfCookie = cookie.Value
+		}
+	}
+
+	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Raffle closes at " + getResponse.Raffle_closes))
+
+	if stripeToken == "" {
+		type tokenStruct struct {
+			ID string `json:"id"`
+		}
+	
+		strpClient := &http.Client{}
+		url := "https://api.stripe.com/v1/tokens"
+		payload := strings.NewReader(
+		`card[number]=` + profile.PaymentDetails.CardNumber +  
+		`&card[cvc]=` + profile.PaymentDetails.CardCvv +  
+		`&card[exp_month]=` + profile.PaymentDetails.CardExpMonth +  
+		`&card[exp_year]=` + profile.PaymentDetails.CardExpYear[len(profile.PaymentDetails.CardExpYear)-2:] +  
+		`&key=` + getResponse.Stripe_public_key)
+	
+		req, err := http.NewRequest("POST", url, payload)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	
+		resp, err := strpClient.Do(req)
+		if err != nil {
+		  fmt.Println(err)
+		  return
+		}
+		defer resp.Body.Close()
+	  
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+		  fmt.Println(err)
+		  return
+		}
+		var token tokenStruct
+		json.Unmarshal([]byte(body), &token)
+		if token.ID == "" {
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Stripe rejected your profile ")+colors.White(profile.Name)+colors.Red("!"))
+			return
+		}
+		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully fetched Stripe token for profile ")+colors.White(profile.Name))
+		stripeToken = token.ID
+	}
+
+	var captchaSolution string
+
+	if getResponse.Captcha != "" {
+		type captchaResponseStruct struct {
+			Solution string `json:"solution"`
+			Processing_time string `json:"processing_time"`
+		}
+
+		fmt.Println(colors.TaskPrefix(id) + colors.White("Capcha enabled!"))
+
+		captchaClient := &http.Client{}
+		webhookUrl := "https://discord.com/api/webhooks/820084465497669663/0VZgCoLaBWAuIJ_osAzhaGEGOjsgQp7v_N6gL_GTxIQoUX6rh_AQZJGn74O4f_1Q9AmM"
+
+		payload, _ := json.Marshal(map[string]string{
+			"b64": getResponse.Captcha,
+			"key": userData.Key,
+			"username": userData.Username,
+			"webhookUrl": webhookUrl,
+		})
+
+		req, err := http.NewRequest("POST", solveIp, bytes.NewBuffer(payload))
+
+		req.Header.Set("content-type", "application/json")
+		req.Header.Set("x-api-key", userData.Key + "-TL")
+
+		resp, err := captchaClient.Do(req)
+		if err != nil {
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed solving Captcha!"))
+			return
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
+			return
+		}
+
+		var captchaResponse captchaResponseStruct
+		json.Unmarshal([]byte(body), &captchaResponse)
+		captchaSolution = captchaResponse.Solution
+		if captchaSolution == "AAAAAA" {
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed solving Captcha!"))
+			return
+		}
+		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully solved Captcha: ") + colors.White(captchaSolution))
+	}
+
+	var payload []byte
+
+	if captchaSolution == "" {
+		payload, err = json.Marshal(map[string]string{
+			"email": profile.BillingAddress.Email,
+			"token": stripeToken,
+		})
+		if err != nil {
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
+		}
+	} else {
+		payload, err = json.Marshal(map[string]string{
+			"captcha": captchaSolution,
+			"email": profile.BillingAddress.Email,
+			"token": stripeToken,
+		})
+		if err != nil {
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
+		}
+	}
+
+	req, err = http.NewRequest("POST", TLUrl, bytes.NewBuffer(payload))
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "__cf_bm=" + cfCookie)
+	if discordSession != "" {
+		req.Header.Set("authorization", "Bearer " + discordSession)
+	}
+
+	resp, err = client.Do(req)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
+		return
+	}
+
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
+		return
+	}
+
+	var postResponse postResponseStruct
+	json.Unmarshal([]byte(body), &postResponse)
+
+	if postResponse.Registered == true {
+		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully entered Raffle with Profile ") + colors.White(profile.Name))
+	} else if postResponse.Error.Message != ""{
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to enter Raffle with Profile ") + colors.White(profile.Name) + colors.Red(" with reason: ") + colors.White(postResponse.Error.Message))
+	} else {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to enter Raffle with Profile ") + colors.White(profile.Name))
+		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Trying again in 5 seconds..."))
+		time.Sleep(time.Second * 5)
+		TLTaskRaffle(wg, userData, id, password, solveIp, task, true)
+	}
+}
+
+func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, solveIp string, task taskStruct) {
 	type getResponseStruct struct {
 		Stripe_public_key string `json:"stripe_public_key"`
 		Price_with_symbol string `json:"price_with_symbol"`
@@ -177,13 +463,17 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 	site := task.Site
 	stripeToken := task.Profile.StripeToken
 	discordSession := task.Profile.DiscordSession
-	client := CoolClient(proxy)
+	client, err := CoolClient(proxy)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Invalid Proxy!"))
+		return
+	}
 
 	beginTime := time.Now()
 
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading Release..."))
 
-	TLUrl := "https://button-backend.tldash.ai/api/register/" + site + "/" + password
+	TLUrl := "https://button-backend.tldash.ai/api/purchase/" + site + "/" + password
 	req, err := http.NewRequest("GET", TLUrl, nil)
 	if err != nil {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
@@ -215,8 +505,6 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Wrong password or release OOS!"))
 		return
 	}
-	
-	go PwSharingSend(password, userData.Username, site)
 
 	var cfCookie string
 
@@ -224,6 +512,9 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		if cookie.Name == "__cf_bm" {
 			cfCookie = cookie.Value
 		}
+	}
+	if cfCookie != "" {
+		go PwSharingSend(password, userData.Username, site)
 	}
 
 	if stripeToken == "" {
@@ -276,7 +567,6 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		fmt.Println(colors.TaskPrefix(id) + colors.White("Capcha enabled!"))
 
 		captchaClient := &http.Client{}
-		url := "http://35.80.125.25:5069/v1/solve"
 		webhookUrl := "https://discord.com/api/webhooks/820084465497669663/0VZgCoLaBWAuIJ_osAzhaGEGOjsgQp7v_N6gL_GTxIQoUX6rh_AQZJGn74O4f_1Q9AmM"
 
 		payload, _ := json.Marshal(map[string]string{
@@ -286,7 +576,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 			"webhookUrl": webhookUrl,
 		})
 
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+		req, err := http.NewRequest("POST", solveIp, bytes.NewBuffer(payload))
 
 		req.Header.Set("content-type", "application/json")
 		req.Header.Set("x-api-key", userData.Key + "-TL")
@@ -334,6 +624,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		}
 	}
 
+	TLUrl = "https://button-backend.tldash.ai/api/register/" + site + "/" + password
 	req, err = http.NewRequest("POST", TLUrl, bytes.NewBuffer(payload))
 	if err != nil {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
@@ -520,4 +811,19 @@ func TLStripe(stripeToken string, profiles []loader.ProfileStruct) []loader.Prof
 	}
 
 	return profiles
+}
+
+func TLFindApi() string {
+	client := http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequest("GET", "http://35.80.125.25:5069", nil)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Green("Using 24/7 API"))
+		return "http://54.159.151.181:5069/v1/solve"
+	}
+	_, err = client.Do(req)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Green("Using 24/7 API"))
+		return "http://54.159.151.181:5069/v1/solve"
+	}
+	return "http://35.80.125.25:5069/v1/solve"
 }
