@@ -22,7 +22,7 @@ func askForSilent() string {
 func askForProfiles(profiles []loader.ProfileStruct) []loader.ProfileStruct {
 	fmt.Println(colors.Prefix() + colors.Red("What profiles do you want to run? You have the following profiles:"))
 	for i := range profiles {
-		fmt.Println(colors.Prefix() + colors.White(""+strconv.Itoa(i+1)+") \"") + colors.Red(profiles[i].Name) + colors.White("\""))
+		fmt.Println(colors.Prefix() + colors.White("["+strconv.Itoa(i+1)+"] \"") + colors.Red(profiles[i].Name) + colors.White("\""))
 	}
 	fmt.Println(colors.Prefix() + colors.Red("Sample input: ") + colors.White("\"") + colors.Red("1, 2, 5") + colors.White("\" ") + colors.Red("or ") + colors.White("\"") + colors.Red("all") + colors.White("\""))
 	var newProfiles []loader.ProfileStruct
@@ -46,6 +46,7 @@ func askForProfiles(profiles []loader.ProfileStruct) []loader.ProfileStruct {
 				pint, err := strconv.Atoi(plist1[i])
 				if err != nil {
 					fmt.Println(colors.Prefix() + colors.Red("Wrong input!"))
+					indexes = []int{}
 					validAns = false
 				}
 				if pint <= len(profiles) {
@@ -53,6 +54,7 @@ func askForProfiles(profiles []loader.ProfileStruct) []loader.ProfileStruct {
 					indexes = append(indexes, pint)
 				} else {
 					fmt.Println(colors.Prefix() + colors.Red("You don't have the profile " + strconv.Itoa(pint)))
+					indexes = []int{}
 					validAns = false
 				}
 			}

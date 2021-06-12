@@ -15,6 +15,8 @@ func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, p
 	fmt.Println(colors.Prefix() + colors.Red("What would you like to do?"))
 	fmt.Println(colors.Prefix() + colors.White("[1] Start the TL Module"))
  	fmt.Println(colors.Prefix() + colors.White("[2] Start the Hyper/Meta Labs Module"))
+	fmt.Println(colors.Prefix() + colors.White("[3] Start the Velo Module"))
+	fmt.Println(colors.Prefix() + colors.White("[4] Start the Shinobi Module"))
 	fmt.Println(colors.Prefix() + colors.White("[%] Create a new Profile"))
 	ans := askForSilent()
 	proxies = loader.LoadProxies()
@@ -38,6 +40,12 @@ func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, p
 		}
 	case "2":
 		modules.HyperInput(userData, profiles, proxies)
+		MainMenu(userData, profiles, proxies)
+	case "3":
+		modules.VeloInput(userData, profiles, proxies)
+		MainMenu(userData, profiles, proxies)
+	case "4":
+		modules.ShinobiInput(userData, profiles, proxies)
 		MainMenu(userData, profiles, proxies)
 	case "%":
 		loader.CreateProfile(profiles)

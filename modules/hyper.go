@@ -41,18 +41,35 @@ type hyperStruct struct {
 		Release string `json:"release"`
 	} `json:"query"`
 }
+type hyperCheckoutStruct struct {
+	Billing_details struct {
+		Address struct {
+			City string `json:"city,omitempty"`
+			Country string `json:"country,omitempty"`
+			Line1 string `json:"line1,omitempty"`
+			Line2 string `json:"line2,omitempty"`
+			Postal_code string `json:"postal_code,omitempty"`
+			State string `json:"state,omitempty"`
+		} `json:"address,omitempty"`
+		Email string `json:"email"`
+		Name string `json:"name"`
+	} `json:"billing_details,omitempty"`
+	Payment_method string `json:"payment_method,omitempty"`
+	User string `json:"user,omitempty"`
+	Release string `json:"release"`
+	
+}
 
 func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?") + colors.White(" (example: \"dashboard.satanbots.com\")"))
 	site := askForSilent()
-	r, _ := regexp.Compile("https:\\/\\/\\w")
-	formatted := r.MatchString(site)
-	if formatted == false {
-		site = "https://" + site
+	r := regexp.MustCompile("[^\\/]*\\.[^\\/]*\\.?[^\\/]*")
+	siteB := r.Find([]byte(site))
+	if siteB == nil {
+		fmt.Println(colors.Prefix() + colors.Red("Invalid site input!"))
+		return
 	}
-	if site[len(site)-1:] != "/" {
-		site = site + "/"
-	}
+	site = "https://" + string(siteB) + "/"
 	fmt.Println(colors.Prefix() + colors.Red("(Y/N) Is the release you're going for paid?"))
 	ans := askForSilent()
 	var paid bool
@@ -63,12 +80,24 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 		paid = false
 		fmt.Println(colors.Prefix() + colors.White("Release is not paid"))
 	}
-
+	fmt.Println(colors.Prefix() + colors.Yellow("Loading site..."))
 	loadPage, err := HyperLoad(site)
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Failed to load site " + site))
 		return
 	}
+	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded site"))
+
+	fmt.Println(colors.Prefix() + colors.Yellow("Trying to solve Bot Protection..."))
+	bpToken, err := GetHyperBpToken(userData, site)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Failed to solve Bot Protection. Please contact Chrigeeel or Shrek!"))
+	} else {
+		fmt.Println(colors.Prefix() + colors.Green("Successfully solved Bot Protection!"))
+	}
+	
+	profiles = askForProfiles(profiles)
+
 	if paid == true {
 		fmt.Println(colors.Prefix() + colors.Yellow("Fetching stripe tokens for all Profiles..."))
 		profiles = HyperStripe(loadPage.Props.Pageprops.Account.Stripe_account, profiles)
@@ -109,7 +138,7 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 	var profileCounter int
 
 	for exit := false; exit == false; {
-		password := GetPw(site)
+		password, releaseId := GetPw(site)
 		if password == "exit" {
 			exit = true
 		} else {
@@ -119,8 +148,15 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 				if profileCounter+1 > len(profiles) {
 					profileCounter = 0
 				}
-				wg.Add(1)
-				go HyperTask(&wg, userData, i+1, password, paid, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter])
+				if releaseId != "" && (userData.Key == "SATAN-BK9O-854C-N85E-WAN7" || userData.Key == "GCGK-T824-E6CC-DUBG") {
+					wg.Add(1)
+					go HyperTaskCool(&wg, userData, i+1, releaseId, paid, false, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+					wg.Add(1)
+					go HyperTaskCool(&wg, userData, i+1, releaseId, paid, true, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+				} else {
+					wg.Add(1)
+					go HyperTask(&wg, userData, i+1, password, paid, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+				}
 				profileCounter++
 			}
 			wg.Wait()
@@ -131,7 +167,7 @@ func HyperInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct,
 func HyperLoad(site string) (hyperStruct, error) {
 	loadPage := hyperStruct{}
 
-	client := http.Client{Timeout: 7 * time.Second}
+	client := http.Client{Timeout: 10 * time.Second}
 	url := site + "purchase"
 	resp, err := client.Get(url)
 	if err != nil {
@@ -162,6 +198,11 @@ func HyperStripe(stripeAccount string, profiles []loader.ProfileStruct) []loader
 	
 		client := &http.Client{}
 		url := "https://api.stripe.com/v1/payment_methods"
+		if len(profiles[id].PaymentDetails.CardExpYear) < 2 {
+			profiles[id].StripeToken = "error"
+			fmt.Println(colors.Prefix() + colors.Red("Stripe rejected your profile ")+colors.White(profiles[id].Name)+colors.Red(" - Not running tasks on this profile"))
+			return
+		}
 		payload := strings.NewReader(
 		`type=card` + 
 		`&billing_details[name]=` + profiles[id].BillingAddress.Name +
@@ -208,6 +249,11 @@ func HyperStripe(stripeAccount string, profiles []loader.ProfileStruct) []loader
 	
 		client := &http.Client{}
 		url := "https://api.stripe.com/v1/payment_methods"
+		if len(profiles[id].PaymentDetails.CardExpYear) < 2 {
+			profiles[id].StripeToken = "error"
+			fmt.Println(colors.Prefix() + colors.Red("Stripe rejected your profile ")+colors.White(profiles[id].Name)+colors.Red(" - Not running tasks on this profile"))
+			return
+		}
 		payload := strings.NewReader(
 		`type=card` + 
 		`&billing_details[name]=` + profiles[id].BillingAddress.Name +
@@ -296,7 +342,10 @@ func HyperLogin(hyperAccountId string, site string, profiles []loader.ProfileStr
 		
 		resp, err := client.Do(req)
 		if err != nil {
-			panic(err)
+			profiles[id].DiscordSession = "error"
+			profiles[id].HyperUserId = "error"
+			fmt.Println(colors.Prefix() + colors.Red("Failed to login to profile ")+colors.White(profiles[id].Name)+colors.Red(" - Not running tasks on this profile"))
+			return
 		}
 		
 		defer resp.Body.Close()
@@ -384,7 +433,130 @@ func HyperLogin(hyperAccountId string, site string, profiles []loader.ProfileStr
 	return profiles
 }
 
-func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, paid bool, site string, hyperAccountId string, profile loader.ProfileStruct) {
+func HyperTaskCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, releaseId string, paid bool, collectBilling bool, site string, hyperAccountId string, profile loader.ProfileStruct, bpToken string) {
+	defer wg.Done()
+
+	beginTime := time.Now()
+
+	checkoutData := hyperCheckoutStruct{}
+
+	checkoutData.Billing_details.Email = profile.BillingAddress.Email
+	checkoutData.Billing_details.Name = profile.BillingAddress.Name
+
+	checkoutData.Release = releaseId
+
+	checkoutData.User = profile.HyperUserId
+
+	if paid == true {
+		checkoutData.Payment_method = profile.StripeToken
+	}
+
+	if collectBilling == true {
+		checkoutData.Billing_details.Address.City = profile.BillingAddress.City
+		checkoutData.Billing_details.Address.Country = "US"
+		checkoutData.Billing_details.Address.Line1 = profile.BillingAddress.Line1
+		checkoutData.Billing_details.Address.Postal_code = profile.BillingAddress.PostCode
+		checkoutData.Billing_details.Address.State = profile.BillingAddress.City
+		if paid == true {
+			checkoutData.Payment_method = profile.StripeToken2
+		}
+	}
+
+	payload, _ := json.Marshal(checkoutData)
+
+	fmt.Println(string(payload))
+
+	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Submitting Checkout..."))
+
+	fmt.Println(site + "ajax/checkouts")
+
+	req, err := http.NewRequest("POST", site + "ajax/checkouts", bytes.NewBuffer(payload))
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to initiate Checkout!"))
+		return
+	}
+
+	req.Header.Set("Cookie", "auhorization=" + profile.DiscordSession)
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("hyper-account", hyperAccountId)
+
+	req.Header.Set("x-amz-cf-id", bpToken)
+
+	client := http.DefaultClient
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to execute Checkout!"))
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+
+	type hyperResponseStruct struct {
+		ID string `json:"id"`
+		Status string `json:"status"`
+	}
+
+	rdata := new(hyperResponseStruct)
+	json.Unmarshal([]byte(body), &rdata)
+	if rdata.ID == "" {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Out of Stock!"))
+		return
+	}
+
+	for {
+		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Processing..."))
+		req, err := http.NewRequest("GET", site + "ajax/checkouts/" + rdata.ID, nil)
+		if err != nil{
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check Success!"))
+			return
+		}		
+		req.Header.Set("Cookie", "auhorization=" + profile.DiscordSession)
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+		req.Header.Set("hyper-account", hyperAccountId)
+		resp, err = client.Do(req)
+		if err != nil{
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check Success!"))
+			return
+		}
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		json.Unmarshal([]byte(body), &rdata)
+		if rdata.Status != "processing" {
+			if rdata.Status == "succeeded" {
+				stopTime := time.Now()
+				diff := stopTime.Sub(beginTime)
+				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile \"" + colors.White(profile.Name) + colors.Green("\"")))
+				go SendWebhook(userData.Webhook, WebhookContentStruct{
+					Speed: diff.String(),
+					Module: "Hyper / Meta Labs",
+					Site: site,
+					Profile: profile.Name,
+				})
+				payload, _ := json.Marshal(map[string]string{
+					"site": site,
+					"module": "Hyper / Meta Labs",
+					"speed": diff.String(),
+					"mode": "Normal",
+					"password": "Unknown",
+					"user": userData.Username,
+				})
+				req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
+				req.Header.Set("content-type", "application/json")
+				client.Do(req)
+				return
+			}
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \"" + colors.White(profile.Name) + colors.Red("\" Reason: " + rdata.Status + " (This means either OOS or already registered!)")))
+			return
+		}
+		time.Sleep(time.Millisecond * 1000)
+	}
+}
+
+func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, paid bool, site string, hyperAccountId string, profile loader.ProfileStruct, bpToken string) {
 	defer wg.Done()
 
 	beginTime := time.Now()
@@ -396,7 +568,11 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
 	}
 
-	client := http.DefaultClient
+	client, err := CoolClient("localhost")
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
+		return
+	}
 
 	resp, err  := client.Do(req)
 	if err != nil {
@@ -424,25 +600,6 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 	if releaseId == "" {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Wrong password or release OOS!"))
 		return
-	}
-
-	type hyperCheckoutStruct struct {
-		Billing_details struct {
-			Address struct {
-				City string `json:"city,omitempty"`
-				Country string `json:"country,omitempty"`
-				Line1 string `json:"line1,omitempty"`
-				Line2 string `json:"line2,omitempty"`
-				Postal_code string `json:"postal_code,omitempty"`
-				State string `json:"state,omitempty"`
-			} `json:"address,omitempty"`
-			Email string `json:"email"`
-			Name string `json:"name"`
-		} `json:"billing_details,omitempty"`
-		Payment_method string `json:"payment_method,omitempty"`
-		User string `json:"user,omitempty"`
-		Release string `json:"release"`
-		
 	}
 
 	checkoutData := hyperCheckoutStruct{}
@@ -490,7 +647,7 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 
 	if botProtection == true {
 		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Bot Protection enabled..."))
-		req.Header.Set("x-amz-cf-id", "U2FsdGVkX19VMUEIMjicKZ7o84tzLuwDXpBwdOjCuwDpm4rq1593pA5gTG2WPmqOuiFdRXCfZUH5M8tkR77AISV+c0CQNgP2VYrE/xI2OSJw6Vrl4MzNf9mYNjKj64jIX1ZpNpoPDn+pLncq2gops62DPqZzWmyrUoQtwV3StY5s7hi/NPxcSYwMq8gYFOLf6hrRUbgToyW9KKjrRqSeIBbcQJulc8+eqH5WezpWrRzC1M/W+bfDf7zAzepjqPPTOOfKfgXFfWGfZ9KLOIdMmwstgLag3XylPGo814gCK3ywpSFzE5s4qgHw+KA3/Bl2kO+BPTKERi4ZJ155wLlKpuFa9lR9vXFAYmHrCnvjP+01tCLNvXomHjedBW/6qknDd2YGmcq/vt6ZxS7oyxagAFGTbwkZBUgQrNW3eAtx1djcDtwHRReSbCjISsQCATvYcG6YrtClGn2r8TbgB8ZJCiZQPc89qJq670HFxCvwjtAAgk8mhutZ8IG09dI61qn244dYJ2ZYTWp3TlUVu99+96/ECXVFQPlUJy2fMsHD2OsKVyN9jCRoVP8VsPqWst5+ePqfdouC+83TA/6b5eyxIQc01il600lnYgNL5ueSsJkr+XQZxHod1Xl2/V5oiqEBKM7zOSmkT06PvwlU9WqwIhaRVfP6RLt2DFkuAU7BJI3fcPNb0QsL2/BvgMGbevW6EQj/YpbDidpwOk+fMyehS+PHhRL2MB1/Flx6uOs3r5EFqqE773WbCXleemKLQXGK812n+6DhnMLh1p0g9lo+Znubs+QSu1XqGgHmsELQ+OSRmCH+Wq4n+nUzpK5E6SFxQc7BkcNbV9NhNlfMSSe7ck7XS0eI6v7v9P3v2WfWr1anm/JkY/OkuJYSE4VgfG59Jay01YZmTrpRoIF0b0OCsZ1kjqr16zl92zOQhkTBN1vHeHEN0/2+/k83rZzvDm7N")
+		req.Header.Set("x-amz-cf-id", bpToken)
 	}
 
 	resp, err = client.Do(req)
@@ -555,9 +712,48 @@ func HyperTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passw
 				client.Do(req)
 				return
 			}
-			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \"" + colors.White(profile.Name) + colors.Red("\" Reason: " + rdata.Status)))
+			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \"" + colors.White(profile.Name) + colors.Red("\" Reason: " + rdata.Status + " (This means either OOS or already registered!)")))
 			return
 		}
 		time.Sleep(time.Millisecond * 1000)
 	}
+}
+
+func GetHyperBpToken(userData loader.UserDataStruct, domain string) (string, error) {
+	type getResponseStruct struct {
+		Success bool `json:"success"`
+		Token string `json:"token"`
+	}
+	payload, err := json.Marshal(map[string]string{
+		"key": userData.Key,
+		"domain": domain,
+	})
+	if err != nil {
+		return "", errors.New("Failed to generate BP Token")
+	}
+	req, err := http.NewRequest("POST", "http://50.16.47.99:6900/", bytes.NewBuffer(payload))
+	if err != nil {
+		return "", errors.New("Failed to generate BP Token")
+
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := http.DefaultClient
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.New("Failed to generate BP Token")
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.New("Failed to generate BP Token")
+	}
+	var getResponse getResponseStruct
+	err = json.Unmarshal(body, &getResponse)
+	if err != nil {
+		return "", errors.New("Failed to generate BP Token")
+	}
+	if getResponse.Success == true {
+		return getResponse.Token, nil
+	}
+	return "", errors.New("Failed to generate BP Token")
 }

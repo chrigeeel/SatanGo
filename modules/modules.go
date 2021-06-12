@@ -29,7 +29,7 @@ var (
 	WS *websocket.Conn
 )
 
-func GetPw(site string) string {
+func GetPw(site string) (string, string) {
 	fmt.Println(colors.Prefix() + colors.Red("Waiting for Password"))
 	fmt.Println(colors.Prefix() + colors.White("Copy the text \"") + colors.Red("exit") + colors.White("\" to exit"))
 	lookingForPw = true
@@ -38,29 +38,40 @@ func GetPw(site string) string {
 	newLink = "bruh"
 	oldLink := newLink
 	oldShare := newShare
-	r := regexp.MustCompile("password=(.*)")
+	r := regexp.MustCompile("(?i)password=\n*?\\s*?(\\S+)")
+	r2 := regexp.MustCompile("\\/purchase\\/([^\\?]*)")
 	var password string
-	password = "bruh"
+	var releaseId string
 	for gotPw := false; gotPw == false; {
 		clipNewB := clipboard.Read(clipboard.FmtText)
 		clipNew := string(clipNewB)
 		if clipNew != clipOld && clipNew != "" {
 			clipOld = clipNew
 			password = clipNew
-			m := r.FindStringSubmatch(password)
+			m := r.FindStringSubmatch(clipNew)
 			if len(m) == 2 {
 				password = m[1]
+			}
+			m2 := r2.FindStringSubmatch(clipNew)
+			if len(m2) == 2 {
+				releaseId = m2[1]
 			}
 			gotPw = true
 		}
 		if newLink != oldLink {
 			oldLink = newLink
 			password = newLink
-			m := r.FindStringSubmatch(password)
+			m := r.FindStringSubmatch(newLink)
 			if len(m) == 2 {
 				password = m[1]
 				gotPw = true
 			}
+			m2 := r2.FindStringSubmatch(newLink)
+			if len(m2) == 2 {
+				releaseId = m2[1]
+				gotPw = true
+			}
+
 		}
 		if (newShare != Message{}) && (oldShare != Message{}) {
 			if (newShare.Password != oldShare.Password) && (newShare.Site == site) {
@@ -74,12 +85,15 @@ func GetPw(site string) string {
 				gotPw = true
 			}
 		}
+		if password == "" {
+			gotPw = false
+		}
 		time.Sleep(time.Microsecond * 5)
 	}
 	lookingForPw = false
 	password = strings.ReplaceAll(password, " ", "")
 	fmt.Println(colors.Prefix() + colors.White("Detected password \"") + colors.Red(password) + colors.White("\""))
-	return password
+	return password, releaseId
 }
 
 func removeIndex(profiles []loader.ProfileStruct, s int) []loader.ProfileStruct {
@@ -136,6 +150,7 @@ func mockedIP() string {
 	var arr [4]int
 	for i := 0; i < 4; i++ {
 		rand.Seed(time.Now().UnixNano())
+		time.Sleep(time.Millisecond * 20)
 		arr[i] = rand.Intn(256)
 	}
 	return fmt.Sprintf("http://%d.%d.%d.%d", arr[0], arr[1], arr[2], arr[3])

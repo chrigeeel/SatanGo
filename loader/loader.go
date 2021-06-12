@@ -15,6 +15,7 @@ type UserDataStruct struct {
 	Key     string `json:"key"`
 	Webhook string `json:"webhook"`
 	Username string `json:"username"`
+	DiscordId string `json:"discordId"`
 	Version string `json:"version"`
 }
 

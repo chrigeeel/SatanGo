@@ -3,6 +3,7 @@ module github.com/chrigeeel/satango
 go 1.16
 
 require (
+	github.com/Luzifer/go-openssl v2.0.0+incompatible // indirect
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect

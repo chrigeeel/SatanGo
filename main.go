@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Version string = "0.5.15"
+	Version string = "0.5.25"
 )
 
 func main() {
@@ -28,6 +28,7 @@ func main() {
 	auth := loader.AuthKey(userData.Key)
 	username := auth.User.Username
 	userData.Username = username
+	userData.DiscordId = auth.User.DiscordId
 	userData.Version = Version
 	fmt.Println(colors.Prefix() + colors.White("Welcome back, ") + colors.Red(username) + "!")
 	loader.LoadProfiles()
@@ -41,11 +42,8 @@ func main() {
 
 	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded profiles, proxies and tokens"))
 	
-	//modules.PWSharingConnect()
 	go modules.PwSharingReceive()
-	time.Sleep(time.Millisecond * 1000)
-
-	//modules.ShreyLogin(profiles)
+	time.Sleep(time.Millisecond * 500)
 
 	menus.MainMenu(userData, profiles, proxies)
 }

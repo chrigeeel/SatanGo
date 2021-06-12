@@ -17,10 +17,12 @@ import (
 
 type user struct {
 	Username string `json:"username"`
+	DiscordId string `json:"id"`
 }
 
 type authStruct struct {
 	User user `json:"user"`
+	Username string `json:"username"`
 }
 
 func debugChecker() {
@@ -60,8 +62,8 @@ func AuthKey(key string) authStruct {
 	var auth authStruct
 	json.Unmarshal(respBytes, &auth)
 	if auth.User.Username == "" {
-		fmt.Println(colors.Prefix() + colors.Red("Authentication failed. Your key is invalid!"))
-		time.Sleep(time.Second * 3)
+		fmt.Println(colors.Prefix() + colors.Red("Authentication failed. Your key is invalid! Exiting..."))
+		time.Sleep(time.Second * 5)
 		os.Exit(3)
 	}
 	fmt.Println(colors.Prefix() + colors.Green("Successfully authenticated your key!"))

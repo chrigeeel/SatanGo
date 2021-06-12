@@ -16,6 +16,15 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 )
+type luciferStruct struct {
+	UserData loader.UserDataStruct `json:"userData"`
+	Password string `json:"password"`
+	SolveIp string `json:"solveIp"`
+	Site string `json:"site"`
+	Proxy string `json:"proxy"`
+	Profile loader.ProfileStruct `json:"profile"`
+	StripeToken string `json:"stripeToken"`
+}
 
 type siteStruct struct {
 	DisplayName string `json:"displayName"`
@@ -65,7 +74,7 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 		if govalidator.IsInt(ans) == false {
 			fmt.Println(colors.Prefix() + colors.Red("Wrong input!"))
 			validAns = false
-		} else if ansInt > len(sites)-1 {
+		} else if ansInt > len(sites) {
 			fmt.Println(colors.Prefix() + colors.Red("Wrong input!"))
 			validAns = false
 		}
@@ -152,15 +161,19 @@ func TLInput(userData loader.UserDataStruct, profiles []loader.ProfileStruct, pr
 		profileCounter++
 	}
 	for exit := false; exit == false; {
-		password := GetPw(site.BackendName)
+		password, _ := GetPw(site.BackendName)
 		if password == "exit" {
 			exit = true
 		} else {
 			fmt.Println(colors.Prefix() + colors.Yellow("Starting tasks..."))
+			//go StartLucifer(userData, password, solveIp, tasks[0].Site, tasks[0].Proxy, tasks[0].Profile, tasks[0].Profile.StripeToken)
+			//go StartLucifer(userData, password, solveIp, tasks[0].Site, tasks[0].Proxy, tasks[0].Profile, tasks[0].Profile.StripeToken)
 			var wg sync.WaitGroup
 			for i := range tasks {
-				wg.Add(1)
-				go TLTask(&wg, userData, i+1, password, solveIp, tasks[i])
+				if len(tasks) > i {
+					wg.Add(1)
+					go TLTask(&wg, userData, i+1, password, solveIp, tasks[i])
+				}
 			}
 			wg.Wait()
 		}
@@ -184,7 +197,6 @@ func TLInputRaffle(userData loader.UserDataStruct, profiles[]loader.ProfileStruc
 		fmt.Println(colors.Prefix() + colors.Green("That means you can run all profiles!"))
 	}
 	taskAmount := len(profiles)
-	taskAmount = 5000
 	var tasks []taskStruct
 	var profileCounter int
 	var proxyCounter int
@@ -591,7 +603,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		if err != nil {
 			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
 			return
-		}
+		}	
 
 		var captchaResponse captchaResponseStruct
 		json.Unmarshal([]byte(body), &captchaResponse)
@@ -641,6 +653,7 @@ func TLTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
 		return
 	}
+	defer resp.Body.Close()
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -712,9 +725,11 @@ func TlLogin(profiles []loader.ProfileStruct) []loader.ProfileStruct {
 		
 		resp, err := client.Do(req)
 		if err != nil {
-			panic(err)
+			profiles[id].DiscordSession = "error"
+			profiles[id].HyperUserId = "error"
+			fmt.Println(colors.Prefix() + colors.Red("Failed to login to profile ")+colors.White(profiles[id].Name)+colors.Red(" - Not running tasks on this profile"))
+			return
 		}
-		
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
 		resp2 := login{}
@@ -763,6 +778,11 @@ func TLStripe(stripeToken string, profiles []loader.ProfileStruct) []loader.Prof
 	
 		client := &http.Client{}
 		url := "https://api.stripe.com/v1/tokens"
+		if len(profiles[id].PaymentDetails.CardExpYear) < 2 {
+			profiles[id].StripeToken = "error"
+			fmt.Println(colors.Prefix() + colors.Red("Stripe rejected your profile ")+colors.White(profiles[id].Name)+colors.Red(" - Not running tasks on this profile"))
+			return
+		}
 		payload := strings.NewReader(
 		`card[number]=` + profiles[id].PaymentDetails.CardNumber +  
 		`&card[cvc]=` + profiles[id].PaymentDetails.CardCvv +  
@@ -826,4 +846,49 @@ func TLFindApi() string {
 		return "http://54.159.151.181:5069/v1/solve"
 	}
 	return "http://35.80.125.25:5069/v1/solve"
+}
+
+func StartLucifer(userData loader.UserDataStruct, password string, solveIp string, site string, proxy string, profile loader.ProfileStruct, stripeToken string) {
+	type postResponseStruct struct {
+		Success string `json:"success"`
+		Error string `json:"error"`
+	}
+	var lucifer luciferStruct
+	lucifer.UserData = userData
+	lucifer.Password = password
+	lucifer.SolveIp = "http://3.90.242.126:5069/v1/solve"
+	lucifer.Site = site
+	lucifer.Proxy = "localhost"
+	lucifer.Profile = profile
+	lucifer.StripeToken = stripeToken
+	payload, _ := json.Marshal(lucifer)
+	req, err := http.NewRequest("POST", "http://3.80.111.182:5069/api/task/start", bytes.NewBuffer(payload))
+	req.Header.Set("content-type", "application/json")
+	client := &http.Client{}
+	fmt.Println(colors.Yellow("Starting Lucifer..."))
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Failed sending to Lucifer!"))
+		return
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Failed sending to Lucifer!"))
+		return
+	}
+	var postResponse postResponseStruct
+	json.Unmarshal([]byte(body), &postResponse)
+	if postResponse.Error != "" {
+		fmt.Println(colors.Prefix() +  colors.White("[Lucifer]") + colors.Red(postResponse.Error))
+		return
+	}
+	if postResponse.Success != "" {
+		fmt.Println(colors.Prefix() + colors.White("[Lucifer]") + colors.Green(postResponse.Success))
+		return
+	}
+
+
+
+
 }
