@@ -13,7 +13,7 @@ require (
 	github.com/d-tsuji/clipboard v0.0.3 // indirect
 	github.com/eiannone/keyboard v0.0.0-20200508000154-caf4b762e807 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
-	github.com/gofiber/fiber/v2 v2.9.0 // indirect
+	github.com/gofiber/fiber/v2 v2.12.0 // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/nsf/termbox-go v1.1.1 // indirect

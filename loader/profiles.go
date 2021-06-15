@@ -32,8 +32,9 @@ type ProfileStruct struct {
 	Name           string `json:"name"`
 	DiscordToken   string `json:"discordToken"`
 	DiscordSession string `json:"discordSession,omitempty"`
+	DiscordId string `json:"discordId,omitempty"`
 	HyperUserId string`json:"hyperUserId,omitempty"`
-	ShreyCookie string `json:"shreyCookie"`
+	ShreyCookie string `json:"shreyCookie,omitempty"`
 	StripeToken string`json:"stripeToken,omitempty"`
 	StripeToken2 string `json:"stripetoken2,omitempty"`
 	BillingAddress BillingAddressStruct `json:"billingAddress"`
