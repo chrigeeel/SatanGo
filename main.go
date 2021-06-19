@@ -7,16 +7,17 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/menus"
-	"github.com/chrigeeel/satango/modules"
+	getpw "github.com/chrigeeel/satango/modules/getpw"
 )
 
 var (
-	Version string = "0.5.26"
+	Version string = "0.5.29"
 )
 
 func main() {
 
-	go modules.Server()
+	go getpw.MonitorClipboard()
+	go getpw.MonitorExtension()
 
 	time.Sleep(time.Millisecond * 10)
 
@@ -42,7 +43,8 @@ func main() {
 
 	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded profiles, proxies and tokens"))
 	
-	go modules.PwSharingReceive()
+	go getpw.PWShareConnectReceive(userData)
+
 	time.Sleep(time.Millisecond * 500)
 
 	menus.MainMenu(userData, profiles, proxies)

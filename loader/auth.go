@@ -38,7 +38,7 @@ func debugChecker() {
 		if p != nil {
 			name := p.Executable()
 			name = strings.ToLower(name)
-			pattern := "dnspy|httpdebuggersvc|fiddler|wireshark|charles|dragonfly|httpwatch|burpsuite|hxd|postman|http toolkit"
+			pattern := "dnspy|httpdebuggersvc|fiddler|wireshark|charles|dragonfly|httpwatch|burpsuite|hxd|postman|http toolkit|glasswire"
 			match, _ := regexp.MatchString(pattern, name)
 			if match == true {
 				fmt.Println(colors.Prefix() + colors.White("Please stop any debuggers. Exiting..."))

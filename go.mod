@@ -15,6 +15,7 @@ require (
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gofiber/fiber/v2 v2.12.0 // indirect
 	github.com/gookit/color v1.4.2 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/rabarar/nbreadline v0.0.0-20150129204744-5bba1c60ebba // indirect
