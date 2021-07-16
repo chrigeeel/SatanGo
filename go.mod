@@ -18,6 +18,7 @@ require (
 	github.com/tam7t/hpkp v0.0.0-20160821193359-2b70b4024ed5 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/x04/cclient v0.0.0-20210412053913-a370c55a8adf
+	github.com/zMrKrabz/fhttp v0.0.0-20210613003958-8bc8ff4739bb // indirect
 	golang.design/x/clipboard v0.4.4
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect

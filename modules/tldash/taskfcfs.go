@@ -21,6 +21,9 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		Stripe_public_key string `json:"stripe_public_key"`
 		Price_with_symbol string `json:"price_with_symbol"`
 		Captcha           string `json:"captcha"`
+		AddressRequired string `json:"address_required"`
+		NameRequired string `json:"name_required"`
+		Country string `json:"country"`
 	}
 	type tlError struct {
 		Message string `json:"message"`
@@ -29,6 +32,18 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		Success bool    `json:"success"`
 		Message string  `json:"message"`
 		Error   tlError `json:"error"`
+	}
+	type payloadStruct struct {
+		Address struct {
+			City string `json:"city,omitempty"`
+			Country string `json:"country,omitempty"`
+			Line1 string `json:"line1,omitempty"`
+			PostalCode string `json:"postal_code,omitempty"`
+		} `json:"address,omitempty"`
+		Captcha string `json:"captcha,omitempty"`
+		Email string `json:"email"`
+		Name string `json:"name,omitempty"`
+		Token string `json:"token"`
 	}
 	defer wg.Done()
 
@@ -192,29 +207,33 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully solved Captcha: ") + colors.White(captchaSolution))
 	}
 
-	var payload []byte
+	payload := payloadStruct{
+		Email: profile.BillingAddress.Email,
+		Token: stripeToken,
+	}
 
-	if captchaSolution == "" {
-		payload, err = json.Marshal(map[string]string{
-			"email": profile.BillingAddress.Email,
-			"token": stripeToken,
-		})
-		if err != nil {
-			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
-		}
-	} else {
-		payload, err = json.Marshal(map[string]string{
-			"captcha": captchaSolution,
-			"email":   profile.BillingAddress.Email,
-			"token":   stripeToken,
-		})
-		if err != nil {
-			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
-		}
+	if captchaSolution != "" {
+		payload.Captcha = captchaSolution
+	}
+
+	if getResponse.NameRequired == "true" {
+		payload.Name = profile.BillingAddress.Name
+	}
+
+	if getResponse.AddressRequired == "true" {
+		payload.Address.City = profile.BillingAddress.Name
+		payload.Address.Country = getResponse.Country
+		payload.Address.Line1 = profile.BillingAddress.Line1
+		payload.Address.PostalCode = profile.BillingAddress.PostCode 
+	}
+
+	p, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
 	}
 
 	TLUrl = "https://button-backend.tldash.ai/api/register/" + site + "/" + password
-	req, err = http.NewRequest("POST", TLUrl, bytes.NewBuffer(payload))
+	req, err = http.NewRequest("POST", TLUrl, bytes.NewBuffer(p))
 	if err != nil {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout!"))
 	}

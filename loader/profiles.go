@@ -34,7 +34,7 @@ type ProfileStruct struct {
 	DiscordSession string `json:"discordSession,omitempty"`
 	DiscordId string `json:"discordId,omitempty"`
 	HyperUserId string`json:"hyperUserId,omitempty"`
-	ShreyCookie string `json:"shreyCookie,omitempty"`
+	ShreyCSRF string `json:"shreyCSRF,omitempty"`
 	StripeToken string`json:"stripeToken,omitempty"`
 	StripeToken2 string `json:"stripetoken2,omitempty"`
 	BillingAddress BillingAddressStruct `json:"billingAddress"`
@@ -52,8 +52,16 @@ func LoadProfiles() []ProfileStruct {
 	profilesBytes, _ := ioutil.ReadAll(profilesFile)
 	var profiles []ProfileStruct
 	json.Unmarshal(profilesBytes, &profiles)
-	jsonData, _ := json.MarshalIndent(profiles, "", "    ")
-	_ = ioutil.WriteFile("./settings/profiles.json", jsonData, 0644)
+	jsonData, err := json.MarshalIndent(profiles, "", "    ")
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
+		return []ProfileStruct{}
+	}
+	err = ioutil.WriteFile("./settings/profiles.json", jsonData, 0644)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
+		return []ProfileStruct{}
+	}
 	return profiles
 }
 
