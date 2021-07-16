@@ -10,7 +10,7 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 type siteStruct struct {
@@ -20,11 +20,6 @@ type siteStruct struct {
 }
 
 var veloSites = []siteStruct{
-	siteStruct{
-		DisplayName:       "NEST",
-		BackendName:       "dashboard.nestbycardinal.com",
-		Stripe_public_key: "pk_live_51IA68dJ8wbUpNsnLYiHjewIyVRpWxRwHICvlxrB53GHnorqNvs5IL8H8BYgeW5U0Dl7CXzIs2l3el741uDkU2Gh000TH4f7mfE",
-	},
 	siteStruct{
 		DisplayName:       "CryptoClub",
 		BackendName:       "dash.cryptoclub.group",
@@ -55,6 +50,11 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		}
 	}
 	site := veloSites[ansInt-1]
+
+	getpw.AskForPwShare()
+
+	profiles = utility.AskForProfiles(profiles)
+
 	fmt.Println(colors.Prefix() + colors.Yellow("Loggin in on all profiles..."))
 	profiles = login(profiles, site.BackendName)
 	if len(profiles) == 0 {
@@ -69,7 +69,6 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		time.Sleep(time.Second * 3)
 		return
 	}
-	profiles = utility.AskForProfiles(profiles)
 
 	var taskLimit int
 	taskLimit = len(profiles) * 4

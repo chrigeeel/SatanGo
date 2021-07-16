@@ -11,7 +11,8 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/modules/getpw"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, profile loader.ProfileStruct) {
@@ -60,6 +61,13 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 	json.Unmarshal([]byte(body), &postResponse)
 
 	if postResponse.Success {
+		pwData := getpw.PWStruct{
+			Username: userData.Username,
+			Password: password,
+			Site: "shinobi",
+			SiteType: "shinobi",
+		}
+		go getpw.PWSharingSend2(pwData)
 		stopTime := time.Now()
 		diff := stopTime.Sub(beginTime)
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out, Check your email!"))

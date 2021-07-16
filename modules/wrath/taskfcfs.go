@@ -10,7 +10,7 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, key string, profile loader.ProfileStruct) {

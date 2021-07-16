@@ -22,7 +22,7 @@ type versionStruct struct {
 func CheckForUpdate(userData UserDataStruct) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Checking for Updates..."))
 	key := userData.Key
-	resp1, err := http.Get("http://50.16.47.99/update/info")
+	resp1, err := http.Get("https://hardcore.astolfoporn.com/update/info")
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Failed to check for Updates! Exiting..."))
 		time.Sleep(time.Second * 5)
@@ -60,7 +60,7 @@ func CheckForUpdate(userData UserDataStruct) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Starting Download..."))
 
 	client := grab.NewClient()
-	req, _ := grab.NewRequest("satango - " + newVersion + ".exe", "http://50.16.47.99/update/" + key)
+	req, _ := grab.NewRequest("satango - " + newVersion + ".exe", "https://hardcore.astolfoporn.com/update/" + key)
 
 	resp := client.Do(req)
 

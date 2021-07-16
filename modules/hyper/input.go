@@ -12,7 +12,7 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
@@ -44,12 +44,14 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded site"))
 
 	fmt.Println(colors.Prefix() + colors.Yellow("Trying to solve Bot Protection..."))
-	bpToken, err := solvebp(userData, site)
+	bpToken, err := Solvebp(site)
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Failed to solve Bot Protection. Please contact Chrigeeel or Shrek!"))
 	} else {
 		fmt.Println(colors.Prefix() + colors.Green("Successfully solved Bot Protection!"))
 	}
+
+	getpw.AskForPwShare()
 
 	profiles = utility.AskForProfiles(profiles)
 
@@ -63,7 +65,7 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		return
 	}
 	fmt.Println(colors.Prefix() + colors.Yellow("Logging in on all profiles..."))
-	profiles = login(loadPage.Props.Pageprops.Account.ID, site, profiles)
+	profiles = Login(loadPage.Props.Pageprops.Account.ID, site, profiles)
 	if len(profiles) == 0 {
 		fmt.Println(colors.Prefix() + colors.Red("You have no valid Profiles! Please check them and their corresponding Discord Tokens!"))
 		time.Sleep(time.Second * 3)
@@ -94,7 +96,7 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 	for exit := false; !exit; {
 		p := getpw.GetPw2(site)
 		password := p.Password
-		releaseId := p.ReleaseId
+		releaseId := p.HyperInfo.ReleaseId
 		if password == "exit" {
 			exit = true
 		} else {
@@ -104,14 +106,19 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 				if profileCounter+1 > len(profiles) {
 					profileCounter = 0
 				}
-				if releaseId != "" && (userData.Key == "SATAN-BK9O-854C-N85E-WAN7" || userData.Key == "GCGK-T824-E6CC-DUBG") {
+				if p.Mode == "share" {
 					wg.Add(1)
-					go taskfcfsCool(&wg, userData, i+1, releaseId, paid, false, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
-					wg.Add(1)
-					go taskfcfsCool(&wg, userData, i+1, releaseId, paid, true, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+					go taskfcfsShare(&wg, userData, i+1, p, profiles[profileCounter])
 				} else {
-					wg.Add(1)
-					go taskfcfs(&wg, userData, i+1, password, paid, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+					if releaseId != "" && (userData.Key == "SATAN-BK9O-854C-N85E-WAN7" || userData.Key == "GCGK-T824-E6CC-DUBG") {
+						wg.Add(1)
+						go taskfcfsCool(&wg, userData, i+1, releaseId, paid, false, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+						wg.Add(1)
+						go taskfcfsCool(&wg, userData, i+1, releaseId, paid, true, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+					} else {
+						wg.Add(1)
+						go taskfcfs(&wg, userData, i+1, password, paid, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+					}
 				}
 				profileCounter++
 			}

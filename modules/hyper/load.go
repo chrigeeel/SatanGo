@@ -12,8 +12,8 @@ import (
 	"github.com/chrigeeel/satango/colors"
 )
 
-func load(site string) (hyperStruct, error) {
-	loadPage := hyperStruct{}
+func load(site string) (HyperStruct, error) {
+	loadPage := HyperStruct{}
 
 	client := http.Client{Timeout: 10 * time.Second}
 	url := site + "purchase"

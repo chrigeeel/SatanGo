@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/chrigeeel/satango/colors"
@@ -11,12 +13,11 @@ import (
 )
 
 var (
-	Version string = "0.5.29"
+	Version string = "0.5.54"
 )
 
 func main() {
 
-	go getpw.MonitorClipboard()
 	go getpw.MonitorExtension()
 
 	time.Sleep(time.Millisecond * 10)
@@ -26,11 +27,18 @@ func main() {
 	fmt.Println(colors.Prefix() + colors.White("Starting... | Version " + Version))
 
 	userData := loader.LoadSettings()
-	auth := loader.AuthKey(userData.Key)
-	username := auth.User.Username
+	auth, err := loader.AuthKeyNew(userData.Key, false)
+	if err != nil {
+		fmt.Println(colors.Prefix() + colors.Red("Exiting in 10 seconds..."))
+		time.Sleep(time.Second * 10)
+		os.Exit(3)
+	}
+	go loader.AuthRoutine()
+	username := auth.DiscordTag
 	userData.Username = username
-	userData.DiscordId = auth.User.DiscordId
+	userData.DiscordId = auth.DiscordId
 	userData.Version = Version
+	
 	fmt.Println(colors.Prefix() + colors.White("Welcome back, ") + colors.Red(username) + "!")
 	loader.LoadProfiles()
 
@@ -40,12 +48,24 @@ func main() {
 	
 	profiles := loader.LoadProfiles()
 	proxies := loader.LoadProxies()
+	token := loader.LoadMonitorToken()
 
-	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded profiles, proxies and tokens"))
+	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded profiles, proxies and tokens!"))
+
+	if token != "" {
+		var wg sync.WaitGroup
+		fmt.Println(colors.Prefix() + colors.Yellow("Logging into Discord with Monitoring token..."))
+		wg.Add(1)
+		go getpw.MonitorDiscord(&wg, token)
+		wg.Wait()
+	}
+
+	go getpw.MonitorClipboard()
 	
-	go getpw.PWShareConnectReceive(userData)
-
-	time.Sleep(time.Millisecond * 500)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go getpw.PWShareConnectReceive(&wg, userData)
+	wg.Wait()
 
 	menus.MainMenu(userData, profiles, proxies)
 }

@@ -52,6 +52,8 @@ func LoadProfiles() []ProfileStruct {
 	profilesBytes, _ := ioutil.ReadAll(profilesFile)
 	var profiles []ProfileStruct
 	json.Unmarshal(profilesBytes, &profiles)
+	jsonData, _ := json.MarshalIndent(profiles, "", "    ")
+	_ = ioutil.WriteFile("./settings/profiles.json", jsonData, 0644)
 	return profiles
 }
 
@@ -59,8 +61,13 @@ func CreateProfile(profiles []ProfileStruct) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Creating a new profile..."))
 	var profile ProfileStruct
 	profile.Name = askFor("Please input the name of the profile")
-	profile.DiscordToken = askFor("Please input the Discord Token for this profile (Press Enter to skip)")
-	profile.BillingAddress.Name = askFor("Please input your name")
+	for rightans := false; rightans == false; {
+		profile.DiscordToken = askFor("Please input the Discord Token for this profile (required)")
+		if profile.DiscordToken != "" {
+			rightans = true
+		}
+	}
+ 	profile.BillingAddress.Name = askFor("Please input your name")
 	profile.BillingAddress.Email = askFor("Please input your email")
 	profile.BillingAddress.Line1 = askFor("Please input your address")
 	profile.BillingAddress.Line2 = askFor("Please input your address line two")

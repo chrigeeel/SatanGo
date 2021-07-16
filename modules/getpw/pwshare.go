@@ -4,20 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
+	"github.com/chrigeeel/satango/utility"
 	"github.com/gorilla/websocket"
 )
 
 var LastPass string
+var Share bool = true
 
 var addr = "44.193.110.231:8080"
 
 var PWShare chan PWStruct
 
-func PWShareConnectReceive(userData loader.UserDataStruct) {
+func PWShareConnectReceive(wg *sync.WaitGroup, userData loader.UserDataStruct) {
 
 	username := userData.Username
 
@@ -31,7 +35,7 @@ func PWShareConnectReceive(userData loader.UserDataStruct) {
 	}
 	defer c.Close()
 	fmt.Println(colors.Prefix() + colors.Green("Successfully connected to PWSharing Server!"))
-
+	wg.Done()
 	done := make(chan struct{})
 	PWShare = make(chan PWStruct)
 
@@ -46,8 +50,6 @@ func PWShareConnectReceive(userData loader.UserDataStruct) {
 			var m PWStruct
 			err = json.Unmarshal([]byte(message), &m)
 			if m.Username != username && err == nil {
-				fmt.Println(colors.Prefix() + colors.Green("You just received the password ") + colors.White("\"") + colors.Green(m.Password) + colors.White("\"") + colors.Green(" on the site ") + colors.White("\"") + colors.Green(m.Site) + colors.White("\""))
-				fmt.Println(colors.Prefix() + colors.White("\"") + colors.Green(m.Username) + colors.White("\"") + colors.Green(" sent that to you, say thanks!"))
 				PWC <- m
 			}
 		}
@@ -87,14 +89,36 @@ func PWShareConnectReceive(userData loader.UserDataStruct) {
 	}
 }
 
-func PWSharingSend(userData loader.UserDataStruct, password string, site string) {
-	if password != LastPass {
+func PWSharingSend(userData loader.UserDataStruct, password string, site string, siteType string) {
+	if password != LastPass && Share == true {
 		LastPass = password
 		m := PWStruct{
 			Username: userData.Username,
 			Password: password,
 			Site: site,
+			SiteType: siteType,
+			Mode: "share",
 		}
 		PWShare <- m
+	}
+}
+
+func PWSharingSend2(p PWStruct) {
+	if p.Password != LastPass && Share == true {
+		LastPass = p.Password
+		p.Mode = "share"
+		PWShare <- p
+	}
+}
+
+func AskForPwShare() {
+	fmt.Println(colors.Prefix() + colors.Red("(Y/N) Would you like to turn on PWSharing? (You will only receive passwords from other people if turned on, highly recommended!)"))
+	ans := utility.AskForSilent()
+	if strings.ToLower(ans)[0:1] == "y" {
+		Share = true
+		fmt.Println(colors.Prefix() + colors.White("Turned PWSharing on!"))
+	} else {
+		Share = false
+		fmt.Println(colors.Prefix() + colors.White("Turned PWSharing off!"))
 	}
 }

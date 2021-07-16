@@ -12,7 +12,7 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func taskraffle(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, solveIp string, task taskStruct, already bool) {

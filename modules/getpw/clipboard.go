@@ -18,7 +18,7 @@ func MonitorClipboard() {
 			password := clipNew
 			p := PWStruct{
 				Password: password,
-				Site: "clipboard",
+				Mode: "clipboard",
 			}
 			PWC <- p
 		}

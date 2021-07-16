@@ -1,6 +1,6 @@
 package hyper
 
-type hyperStruct struct {
+type HyperStruct struct {
 	Props struct {
 		Pageprops struct {
 			Account struct {
@@ -16,6 +16,9 @@ type hyperStruct struct {
 				ID             string `json:"id"`
 				Stripe_account string `json:"stripe_account"`
 			} `json:"account"`
+			Release struct {
+				OutOfStock bool `json:"out_of_stock"`
+			}
 		} `json:"pageProps"`
 	} `json:"props"`
 	Query struct {
@@ -23,7 +26,7 @@ type hyperStruct struct {
 		Release string `json:"release"`
 	} `json:"query"`
 }
-type hyperCheckoutStruct struct {
+type HyperCheckoutStruct struct {
 	Billing_details struct {
 		Address struct {
 			City        string `json:"city,omitempty"`

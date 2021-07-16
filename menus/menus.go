@@ -5,13 +5,14 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
+	"github.com/chrigeeel/satango/modules/afk"
 	"github.com/chrigeeel/satango/modules/hyper"
 	"github.com/chrigeeel/satango/modules/shinobi"
 	"github.com/chrigeeel/satango/modules/tldash"
 	"github.com/chrigeeel/satango/modules/torpedo"
-	"github.com/chrigeeel/satango/modules/utility"
 	"github.com/chrigeeel/satango/modules/velo"
 	"github.com/chrigeeel/satango/modules/wrath"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
@@ -21,10 +22,12 @@ func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, p
  	fmt.Println(colors.Prefix() + colors.White("[2] Start the Hyper/Meta Labs Module"))
 	fmt.Println(colors.Prefix() + colors.White("[3] Start the Velo Module"))
 	fmt.Println(colors.Prefix() + colors.White("[4] Start the Custom Modules"))
+	fmt.Println(colors.Prefix() + colors.White("[5] Start FREE AFK Module"))
 	fmt.Println(colors.Prefix() + colors.White("[%] Create a new Profile"))
 	ans := utility.AskForSilent()
 	proxies = loader.LoadProxies()
 	profiles = loader.LoadProfiles()
+	hyper.Initbp()
 	switch ans {
 	case "1":
 		fmt.Println(colors.Prefix() + colors.Red("Would you like to start the Raffle or FCFS module?"))
@@ -68,6 +71,9 @@ func MainMenu(userData loader.UserDataStruct, profiles []loader.ProfileStruct, p
 			fmt.Println(colors.Prefix() + colors.Red("Invalid answer!"))
 			MainMenu(userData, profiles, proxies)
 		}
+	case "5":
+		afk.Input(userData, profiles)
+		MainMenu(userData, profiles, proxies)
 	case "%":
 		loader.CreateProfile(profiles)
 		MainMenu(userData, profiles, proxies)

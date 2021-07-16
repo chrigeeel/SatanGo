@@ -7,7 +7,7 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func inputraffle(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string, discordLogin bool, site siteStruct, solveIp string) {

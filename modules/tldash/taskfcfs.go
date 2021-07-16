@@ -13,7 +13,7 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, password string, solveIp string, task taskStruct) {
@@ -88,7 +88,14 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		}
 	}
 	if cfCookie != "" {
-		go getpw.PWSharingSend(userData, password, site)
+		pwData := getpw.PWStruct{
+			Username: userData.Username,
+			Password: password,
+			Site: site,
+			SiteType: "tldash",
+		}
+		go getpw.PWSharingSend2(pwData)
+		go newstripe(task.Site, getResponse.Stripe_public_key)
 	}
 
 	if stripeToken == "" {
@@ -261,6 +268,20 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout with reason: ") + colors.White("\"") + colors.Red(postResponse.Error.Message) + colors.White("\"") + colors.Red("!"))
 		return
 	}
+	if postResponse.Message !=  "" {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout with reason: ") + colors.White("\"") + colors.Red(postResponse.Message) + colors.White("\"") + colors.Red("!"))
+		return
+	}
 	fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout for some reason, DM the below to owners:"))
 	fmt.Println(colors.TaskPrefix(id) + colors.White(string(body)))
+}
+
+func newstripe(site string, stripe string) {
+	req, err := http.NewRequest("POST", "https://hardcore.astolfoporn.com/newstripe?site=" + site + "&stripe=" + stripe, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("x-auth", "BruhPlsStop")
+	client := http.DefaultClient
+	client.Do(req)
 }

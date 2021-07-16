@@ -89,3 +89,22 @@ func LoadProxies() []string {
 
 	return proxies
 }
+
+func LoadMonitorToken() string {
+	monitorFile, err := os.Open("./settings/monitortoken.txt")
+	if err != nil {
+		data := askFor("Please input your Discord Monitoring token (Should be safe to use main account, press [ENTER] to skip)")
+		err := ioutil.WriteFile("./settings/monitortoken.txt", []byte(data), 0644)
+		if err != nil {
+			fmt.Println(colors.Prefix() + colors.Red("Your Discord Monitoring token is not set up in ./settings/monitortoken.txt ! Please create the file"))
+		}
+		monitorFile, _ = os.Open("./settings/monitortoken.txt")
+	}
+	defer monitorFile.Close()
+
+	token, err := ioutil.ReadAll(monitorFile)
+	if err != nil {
+		return ""
+	}
+	return string(token)
+}

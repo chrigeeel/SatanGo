@@ -11,10 +11,10 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
-func login(hyperAccountId string, site string, profiles []loader.ProfileStruct) []loader.ProfileStruct {
+func Login(hyperAccountId string, site string, profiles []loader.ProfileStruct) []loader.ProfileStruct {
 	type login struct {
 		Location string `json:"location"`
 	}
@@ -84,7 +84,7 @@ func login(hyperAccountId string, site string, profiles []loader.ProfileStruct) 
 		r, _ = regexp.Compile("__NEXT_DATA__\" type=\"application\\/json\">({.*})")
 		mdata := r.FindStringSubmatch(string(body))[1]
 
-		loadPage := hyperStruct{}
+		loadPage := HyperStruct{}
 
 		json.Unmarshal([]byte(mdata), &loadPage)
 
@@ -119,7 +119,6 @@ func login(hyperAccountId string, site string, profiles []loader.ProfileStruct) 
 			fmt.Println(colors.Prefix() + colors.Red("Failed to login to profile ") + colors.White(profiles[id].Name) + colors.Red(" - Not running tasks on this profile"))
 			return
 		}
-
 		profiles[id].DiscordSession = hyperToken
 		profiles[id].HyperUserId = user.ID
 		fmt.Println(colors.Prefix() + colors.Green("Successfully logged in on profile ") + colors.White(profiles[id].Name))

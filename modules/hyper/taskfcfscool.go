@@ -11,15 +11,17 @@ import (
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, releaseId string, paid bool, collectBilling bool, site string, hyperAccountId string, profile loader.ProfileStruct, bpToken string) {
 	defer wg.Done()
 
+	fmt.Println("cool task")
+
 	beginTime := time.Now()
 
-	checkoutData := hyperCheckoutStruct{}
+	checkoutData := HyperCheckoutStruct{}
 
 	checkoutData.Billing_details.Email = profile.BillingAddress.Email
 	checkoutData.Billing_details.Name = profile.BillingAddress.Name
@@ -44,8 +46,6 @@ func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, re
 	}
 
 	payload, _ := json.Marshal(checkoutData)
-
-	fmt.Println(string(payload))
 
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Submitting Checkout..."))
 
@@ -74,7 +74,6 @@ func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, re
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
 
 	type hyperResponseStruct struct {
 		ID     string `json:"id"`

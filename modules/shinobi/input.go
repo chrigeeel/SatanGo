@@ -10,7 +10,7 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
@@ -21,6 +21,8 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		time.Sleep(time.Second * 3)
 		return
 	}
+
+	getpw.AskForPwShare()
 
 	profiles = utility.AskForProfiles(profiles)
 

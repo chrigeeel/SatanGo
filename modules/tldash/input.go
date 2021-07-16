@@ -14,12 +14,12 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string, mode string) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Loading sites..."))
-	resp, err := http.Get("http://50.16.47.99/sites/tl")
+	resp, err := http.Get("https://hardcore.astolfoporn.com/sites/tl")
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Error loading sites! exiting..."))
 		time.Sleep(time.Second * 3)
@@ -66,7 +66,13 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		discordLogin = false
 		fmt.Println(colors.Prefix() + colors.White("Discord login turned ") + colors.Red("Off"))
 	}
+
+	getpw.AskForPwShare()
+
+	profiles = utility.AskForProfiles(profiles)
+
 	if discordLogin {
+		fmt.Println(colors.Prefix() + colors.Yellow("Logging in on all profiles..."))
 		profiles = login(profiles)
 	}
 	if len(profiles) == 0 {
@@ -82,8 +88,6 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		time.Sleep(time.Second * 3)
 		return
 	}
-
-	profiles = utility.AskForProfiles(profiles)
 
 	fmt.Println(colors.Prefix() + colors.Yellow("Locating best TL API Server..."))
 	solveIp := findApi()

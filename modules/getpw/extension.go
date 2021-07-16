@@ -54,10 +54,14 @@ func handleLink(c *fiber.Ctx) error {
 			"success": true,
 		})
 	}
+	hyperInfo := HyperInfo{
+		ReleaseId: releaseId,
+	}
 	p := PWStruct{
 		Password: password,
-		ReleaseId: releaseId,
-		Site: "link",
+		Mode: "extension",
+		HyperInfo: hyperInfo,
+			
 	}
 	PWC <- p
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

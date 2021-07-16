@@ -12,7 +12,7 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
-	"github.com/chrigeeel/satango/modules/utility"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func VeloTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, site siteStruct, password string, profile loader.ProfileStruct) {
@@ -73,7 +73,13 @@ func VeloTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, site s
 
 	fmt.Println(getResponse.Checkout)
 
-	go getpw.PWSharingSend(userData, password, site.BackendName)
+	pwData := getpw.PWStruct{
+		Username: userData.Username,
+		Password: password,
+		Site: site.BackendName,
+		SiteType: "velo",
+	}
+	go getpw.PWSharingSend2(pwData)
 
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Submitting Stripe..."))
 
