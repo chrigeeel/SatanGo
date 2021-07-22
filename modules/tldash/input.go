@@ -146,13 +146,11 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 			exit = true
 		} else {
 			fmt.Println(colors.Prefix() + colors.Yellow("Starting tasks..."))
-			//go StartLucifer(userData, password, solveIp, tasks[0].Site, tasks[0].Proxy, tasks[0].Profile, tasks[0].Profile.StripeToken)
-			//go StartLucifer(userData, password, solveIp, tasks[0].Site, tasks[0].Proxy, tasks[0].Profile, tasks[0].Profile.StripeToken)
 			var wg sync.WaitGroup
 			for i := range tasks {
 				if len(tasks) > i {
 					wg.Add(1)
-					go taskfcfs(&wg, userData, i+1, password, solveIp, tasks[i])
+					go taskfcfs(&wg, userData, i+1, password, solveIp, tasks[i], false)
 				}
 			}
 			wg.Wait()

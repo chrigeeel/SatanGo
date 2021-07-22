@@ -22,7 +22,6 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 	beginTime := time.Now()
 
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading Release..."))
-	fmt.Println(site+"purchase?password="+password)
 	req, err := http.NewRequest("GET", site+"purchase?password="+password, nil)
 	if err != nil {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
@@ -176,7 +175,7 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 			if rdata.Status == "succeeded" {
 				stopTime := time.Now()
 				diff := stopTime.Sub(beginTime)
-				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile \""+colors.White(profile.Name)+colors.Green("\"")))
+				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile ") + colors.White("\"") + colors.Green(profile.Name) + colors.White("\""))
 				go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
 					Speed:   diff.String(),
 					Module:  "Hyper / Meta Labs",

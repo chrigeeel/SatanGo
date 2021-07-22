@@ -57,6 +57,10 @@ func LoadProfiles() []ProfileStruct {
 		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
 		return []ProfileStruct{}
 	}
+	if string(jsonData) == "null" {
+		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
+		return []ProfileStruct{}
+	}
 	err = ioutil.WriteFile("./settings/profiles.json", jsonData, 0644)
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))

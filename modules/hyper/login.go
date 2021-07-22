@@ -31,7 +31,7 @@ func Login(hyperAccountId string, site string, profiles []loader.ProfileStruct) 
 		}
 		r, _ := regexp.Compile(`\?code=(\w*)`)
 		client := &http.Client{}
-		dUrl := "https://discord.com/api/v9/oauth2/authorize?client_id=648234176805470248&response_type=code&redirect_uri=https%3A%2F%2Fapi.hyper.co%2Fportal%2Fauth%2Fdiscord%2Fcallback&scope=identify%20email%20guilds%20guilds.join&state=%7B%22account%22%3A%22" + hyperAccountId + "%22%7D"
+		dUrl := "https://discord.com/api/v9/oauth2/authorize?client_id=648234176805470248&response_type=code&redirect_uri=https%3A%2F%2Fhyper.co%2Fajax%2Fauth%2Fdiscord%2Fcallback&scope=identify%20email%20guilds%20guilds.join&state=%7B%22account%22%3A%22" + hyperAccountId + "%22%7D"
 
 		payload, _ := json.Marshal(map[string]string{
 			"permissions": "0",
@@ -70,7 +70,7 @@ func Login(hyperAccountId string, site string, profiles []loader.ProfileStruct) 
 		code := resp2.Location
 		code = r.FindStringSubmatch(code)[1]
 
-		callBackUrl := "https://api.hyper.co/portal/auth/discord/callback?code=" + code + "&state=%7B%22account%22%3A%22" + hyperAccountId + "%22%7D"
+		callBackUrl := "https://hyper.co/ajax/auth/discord/callback?code=" + code + "&state=%7B%22account%22%3A%22" + hyperAccountId + "%22%7D"
 		resp, err = client.Get(callBackUrl)
 		if err != nil {
 			profiles[id].DiscordSession = "error"

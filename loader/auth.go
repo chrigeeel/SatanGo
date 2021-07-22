@@ -65,14 +65,11 @@ func debugChecker() {
 }
 
 func AuthKey(key string, silent bool) (authStruct, error) {
-	debugChecker()
+	//debugChecker()
 	if !silent {
 		fmt.Println(colors.Prefix() + colors.Yellow("Authenticating your key..."))
 	}
-	conf := &tls.Config{
-        InsecureSkipVerify: true,
-    }
-
+	conf := &tls.Config{}
     conn, err := tls.Dial("tcp", "hardcore.astolfoporn.com:443", conf)
     if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Authentication failed. Code #TTL"))
