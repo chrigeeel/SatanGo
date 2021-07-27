@@ -2,6 +2,7 @@ package hyper
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +17,14 @@ import (
 )
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
+	err := loader.AuthKeySilent(userData.Key)
+	if err != nil {
+		fmt.Println("")
+		fmt.Println(colors.Prefix() + colors.Red("Failed to authenticate your key!"))
+		fmt.Println(colors.Prefix() + colors.Red("Please contact staff!"))
+		time.Sleep(time.Second * 10)
+		os.Exit(3)
+	}
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?") + colors.White(" (example: \"dashboard.satanbots.com\")"))
 	site := utility.AskForSilent()
 	r := regexp.MustCompile(`[^\/]*\.[^\/]*\.?[^\/]*`)
@@ -110,7 +119,7 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 					wg.Add(1)
 					go taskfcfsShare(&wg, userData, i+1, p, profiles[profileCounter])
 				} else {
-					if releaseId != "" && (userData.Key == "SATAN-BK9O-854C-N85E-WAN7" || userData.Key == "GCGK-T824-E6CC-DUBG") {
+					if releaseId != "" && (userData.Key == "SATAN-PRSF-JLE5-ICJU-M85H" || userData.Key == "GCGK-T824-E6CC-DUBG") {
 						wg.Add(1)
 						go taskfcfsCool(&wg, userData, i+1, releaseId, paid, false, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
 						wg.Add(1)

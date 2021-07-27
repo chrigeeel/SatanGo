@@ -3,8 +3,12 @@ package getpw
 import (
 	"fmt"
 	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/chrigeeel/satango/colors"
+	"github.com/chrigeeel/satango/loader"
+	"github.com/chrigeeel/satango/utility"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -12,6 +16,7 @@ func MonitorExtension() {
 	app := fiber.New()
 
 	app.Post("/sendpass", handleLink)
+	app.Get("/profiles", handleProfiles)
 	app.Listen(":5000")
 }
 
@@ -67,4 +72,29 @@ func handleLink(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 	})
+}
+
+func handleProfiles(c *fiber.Ctx) error {
+	auth := c.Get("auth")
+	
+	ts, err := utility.AESDecrypt(auth, "w9z$B&E)H@McQfTj")
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "authentication failed1",
+		})
+	}
+	tsn, err := strconv.ParseInt(ts, 10, 64)
+    if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "authentication failed2",
+		})
+    }
+	cr := time.Now().Unix()
+	if cr - tsn > 900 {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "authentication failed3",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(loader.LoadProfiles())
 }

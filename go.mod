@@ -12,6 +12,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.12.0
 	github.com/gookit/color v1.4.2
 	github.com/gorilla/websocket v1.4.2
+	github.com/hugolgst/rich-go v0.0.0-20210525072106-9d45f0e06959 // indirect
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/refraction-networking/utls v0.0.0-20201210053706-2179f286686b
 	github.com/shirou/gopsutil v3.21.4+incompatible
@@ -22,4 +23,5 @@ require (
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )

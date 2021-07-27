@@ -32,9 +32,9 @@ type authStruct struct {
 }
 
 type authStructNew struct {
-	DiscordId     string `bson:"discordId"`
-	DiscordTag    string `bson:"discordTag"`
-	DiscordAvatar string `bson:"discordAvatar"`
+	DiscordId     string `json:"DiscordId"`
+	DiscordTag    string `json:"DiscordTag"`
+	DiscordAvatar string `json:"DiscordAvatar"`
 
 	ID string `json:"id"`
 }
@@ -65,11 +65,13 @@ func debugChecker() {
 }
 
 func AuthKey(key string, silent bool) (authStruct, error) {
-	//debugChecker()
+	debugChecker()
 	if !silent {
 		fmt.Println(colors.Prefix() + colors.Yellow("Authenticating your key..."))
 	}
-	conf := &tls.Config{}
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
     conn, err := tls.Dial("tcp", "hardcore.astolfoporn.com:443", conf)
     if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Authentication failed. Code #TTL"))
@@ -164,16 +166,7 @@ func AuthKeyNew(key string, silent bool) (authStructNew, error) {
 		fmt.Println(colors.Prefix() + colors.Red("Authentication failed. Code #TTL3"))
 		return authStructNew{}, errors.New("failed to authenticate")
 	}
-	
-	req, err := http.NewRequest("GET", "https://hardcore.astolfoporn.com/newauth?key=" + key, nil)
-	if err != nil {
-		if !silent {
-			fmt.Println(colors.Prefix() + colors.Red("The Auth API is down atm! Code DWN1"))
-		}
-		return authStructNew{}, errors.New("failed to authenticate")
-	}
-	client := http.DefaultClient
-	resp, err := client.Do(req)
+	resp, err := http.Get("https://hardcore.astolfoporn.com/newauth?key=" + key)
 	if err != nil {
 		if !silent {
 			fmt.Println(colors.Prefix() + colors.Red("The Auth API is down atm! Code DWN2"))
@@ -204,7 +197,7 @@ func AuthKeyNew(key string, silent bool) (authStructNew, error) {
 		return authStructNew{}, errors.New("failed to authenticate")
     }
 	cr := time.Now().Unix()
-	if cr - tsn > 900 {
+	if cr - tsn > 120 {
 		fmt.Println(colors.Prefix() + colors.Red("Authentication failed! Code #TMT"))
 		return authStructNew{}, errors.New("failed to authenticate")
 	}
@@ -214,13 +207,86 @@ func AuthKeyNew(key string, silent bool) (authStructNew, error) {
 	return auth, nil
 }
 
+func AuthKeySilent(key string) error {
+	conf := &tls.Config{
+        InsecureSkipVerify: true,
+    }
 
-func AuthRoutine() {
-	for {
-		time.Sleep(time.Second * 5)
-		debugChecker()
+    conn, err := tls.Dial("tcp", "hardcore.astolfoporn.com:443", conf)
+    if err != nil {
+		return errors.New("failed to authenticate")
+    }
+    defer conn.Close()
+    certs := conn.ConnectionState().PeerCertificates
+	if len(certs) != 1 {
+		return errors.New("failed to authenticate")
+	}
+	cert := certs[0]
+
+	if hpkp.Fingerprint(cert) != "MDj9GJ2ggaWCZj1A0nDoWHUa90+f95PRfnQbIFo1n" + "Mc=" {
+		return errors.New("failed to authenticate")
 	}
 
+	go func() {
+		http.Get("https://de.pornhub.com/view_video.php?viewkey=ph5be2f23e38aab")
+	}()
+
+	go func() {
+		http.Get("https://evildash.com/admin/home")
+	}()
+	
+	req, err := http.NewRequest("GET", "https://hardcore.astolfoporn.com/newauth?key=" + key, nil)
+	if err != nil {
+		return errors.New("failed to authenticate")
+	}
+	client := http.DefaultClient
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.New("failed to authenticate")
+	}
+	defer resp.Body.Close()
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return errors.New("failed to authenticate")
+	}
+	var auth authStructNew
+	json.Unmarshal(respBytes, &auth)
+	if auth.DiscordTag == "" || resp.StatusCode != 200 {
+		return errors.New("failed to authenticate")
+	}
+	bruh := "e"
+	ts, err := AESDecrypt(auth.ID, "r5u8x/A?D(G+KbP" + bruh)
+	if err != nil {
+		return errors.New("failed to authenticate")
+	}
+	tsn, err := strconv.ParseInt(ts, 10, 64)
+    if err != nil {
+		return errors.New("failed to authenticate")
+    }
+	cr := time.Now().Unix()
+	if cr - tsn > 120 {
+		return errors.New("failed to authenticate")
+	}
+	return nil
+}
+
+func AuthRoutine(key string) {
+	var errorLog int
+	for {
+		time.Sleep(time.Second * 30)
+		debugChecker()
+		err := AuthKeySilent(key)
+		if err != nil {
+			errorLog++
+			if errorLog > 5 {
+				fmt.Println("")
+				fmt.Println(colors.Prefix() + colors.Red("Failed to authenticate your key!"))
+				fmt.Println(colors.Prefix() + colors.Red("Please contact staff!"))
+				time.Sleep(time.Second * 10)
+				os.Exit(3)
+			}
+		}
+	}
 }
 
 func AESEncrypt(plaintext string, secret string) (string, error) {
@@ -249,4 +315,3 @@ func AESDecrypt(plaintext string, secret string) (string, error) {
     
 	return string(dec), nil
 }
-

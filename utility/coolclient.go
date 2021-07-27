@@ -3,7 +3,6 @@ package utility
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -25,20 +24,20 @@ func CoolClient(proxy string) (http.Client, error) {
 		fmt.Println(colors.Prefix() + colors.White("Invalid Proxy: "+proxy))
 		client, err := cclient.NewClient(tls.HelloRandomizedNoALPN)
 		if err != nil {
-			log.Fatal(err)
+			return client, err
 		}
-		return client, errors.New("Invalid Proxy")
+		return client, errors.New("invalid proxy")
 	}
 	if proxyFormatted != "" {
 		client, err := cclient.NewClient(tls.HelloRandomizedNoALPN, proxyFormatted)
 		if err != nil {
-			log.Fatal(err)
+			return client, err
 		}
 		return client, nil
 	}
 	client, err := cclient.NewClient(tls.HelloRandomizedNoALPN)
 	if err != nil {
-		log.Fatal(err)
+		return client, err
 	}
 	return client, nil
 }

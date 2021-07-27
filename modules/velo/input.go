@@ -2,6 +2,7 @@ package velo
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -20,7 +21,12 @@ type siteStruct struct {
 }
 
 var veloSites = []siteStruct{
-	siteStruct{
+	{
+		DisplayName:       "ClipAIO",
+		BackendName:       "dash.clipaio.com",
+		Stripe_public_key: "pk_live_51JD4fxDAtQxFOfqOmxO8K2jg0guFi7zUx4jqK2TKzw7PfXqI9RJ2qYkFaQ75XPa063E6cCf4d9Gl8FB8rSMtGUOs00koDgBjMP",
+	},
+	{
 		DisplayName:       "CryptoClub",
 		BackendName:       "dash.cryptoclub.group",
 		Stripe_public_key: "pk_live_51IibakGMt5G1CmqPqzOg6k2RKavZa2PF2BoQ0c5BM53GKANiJCGq7CZwL1uHAzjjcAYD4jaCYsYtsa6M3QV7ivMX00n8thUefS",
@@ -28,6 +34,14 @@ var veloSites = []siteStruct{
 }
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
+	err := loader.AuthKeySilent(userData.Key)
+	if err != nil {
+		fmt.Println("")
+		fmt.Println(colors.Prefix() + colors.Red("Failed to authenticate your key!"))
+		fmt.Println(colors.Prefix() + colors.Red("Please contact staff!"))
+		time.Sleep(time.Second * 10)
+		os.Exit(3)
+	}
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?"))
 	for i := range veloSites {
 		fmt.Println(colors.Prefix() + colors.White("["+strconv.Itoa(i+1)+"] "+veloSites[i].DisplayName))

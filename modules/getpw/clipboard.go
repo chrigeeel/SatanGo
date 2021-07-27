@@ -1,6 +1,8 @@
 package getpw
 
 import (
+	"fmt"
+	"runtime"
 	"time"
 
 	"golang.design/x/clipboard"
@@ -10,6 +12,10 @@ import (
 func MonitorClipboard() {
 	clipOldB := clipboard.Read(clipboard.FmtText)
 	clipOld := string(clipOldB)
+	fmt.Println(runtime.GOOS)
+	if runtime.GOOS == "darwin" {
+		
+	}
 	for {
 		clipNewB := clipboard.Read(clipboard.FmtText)
 		clipNew := string(clipNewB)

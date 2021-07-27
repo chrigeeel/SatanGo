@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	Version string = "0.5.60"
+	Version string = "0.5.70"
 )
 
 func main() {
@@ -27,16 +27,24 @@ func main() {
 	fmt.Println(colors.Prefix() + colors.White("Starting... | Version " + Version))
 
 	userData := loader.LoadSettings()
-	auth, err := loader.AuthKey(userData.Key, false)
+	auth, err := loader.AuthKeyNew(userData.Key, false)
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Exiting in 10 seconds..."))
 		time.Sleep(time.Second * 10)
 		os.Exit(3)
 	}
-	//go loader.AuthRoutine()
-	username := auth.User.Username
+	go func() {
+		time.Sleep(time.Second * 15)
+		go loader.AuthRoutine(userData.Key)
+		time.Sleep(time.Second * 5)
+		go loader.AuthRoutine(userData.Key)
+		time.Sleep(time.Second * 5)
+		go loader.AuthRoutine(userData.Key)
+		time.Sleep(time.Second * 5)
+	}()
+	username := auth.DiscordTag
 	userData.Username = username
-	userData.DiscordId = auth.User.DiscordId
+	userData.DiscordId = auth.DiscordId
 	userData.Version = Version
 	
 	fmt.Println(colors.Prefix() + colors.White("Welcome back, ") + colors.Red(username) + "!")
@@ -51,6 +59,8 @@ func main() {
 	token = strings.ReplaceAll(token, "\"", "")
 
 	fmt.Println(colors.Prefix() + colors.Green("Successfully loaded profiles, proxies and tokens!"))
+
+	loader.UpdateRichPresence(Version)
 
 	if token != "" {
 		var wg sync.WaitGroup

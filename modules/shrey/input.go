@@ -2,6 +2,7 @@ package shrey
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"sync"
@@ -15,6 +16,14 @@ import (
 )
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {
+	err := loader.AuthKeySilent(userData.Key)
+	if err != nil {
+		fmt.Println("")
+		fmt.Println(colors.Prefix() + colors.Red("Failed to authenticate your key!"))
+		fmt.Println(colors.Prefix() + colors.Red("Please contact staff!"))
+		time.Sleep(time.Second * 10)
+		os.Exit(3)
+	}
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?") + colors.White(" (example: \"dashboard.satanbots.com\")"))
 	site := utility.AskForSilent()
 	r := regexp.MustCompile(`[^\/]*\.[^\/]*\.?[^\/]*`)
@@ -44,9 +53,9 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 	fmt.Println(colors.Prefix() + colors.Yellow("Attaching Payment Method on all profiles..."))
 	profiles = stripe(profiles, site)
 
-	var taskLimit int = len(profiles) * 2
+	taskLimit := len(profiles)
 
-	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" because you have ") + colors.White(strconv.Itoa(len(profiles))) + colors.Red(" valid profiles"))
+	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" because you have ") + colors.White(strconv.Itoa(len(profiles))) + colors.Red(" valid profile(s)"))
 
 	var taskAmount int
 	for validAns := false; !validAns; {

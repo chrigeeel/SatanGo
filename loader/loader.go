@@ -15,8 +15,8 @@ type UserDataStruct struct {
 	Key     string `json:"key"`
 	Webhook string `json:"webhook"`
 	Username string `json:"username"`
-	DiscordId string `json:"discordId"`
-	Version string `json:"version"`
+	DiscordId string `json:"discordId,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 func CreateSettings() {

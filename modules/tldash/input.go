@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,7 +20,15 @@ import (
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string, mode string) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Loading sites..."))
-	resp, err := http.Get("https://hardcore.astolfoporn.com/sites/tl")
+	err := loader.AuthKeySilent(userData.Key)
+	if err != nil {
+		fmt.Println("")
+		fmt.Println(colors.Prefix() + colors.Red("Failed to authenticate your key!"))
+		fmt.Println(colors.Prefix() + colors.Red("Please contact staff!"))
+		time.Sleep(time.Second * 10)
+		os.Exit(3)
+	}
+	resp, err := http.Get("https://hardcore.astolfoporn.com/api/sites/tl")
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Error loading sites! exiting..."))
 		time.Sleep(time.Second * 3)
@@ -147,10 +156,19 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		} else {
 			fmt.Println(colors.Prefix() + colors.Yellow("Starting tasks..."))
 			var wg sync.WaitGroup
-			for i := range tasks {
+			var bypassLevel int
+			for i, task := range tasks {
 				if len(tasks) > i {
 					wg.Add(1)
-					go taskfcfs(&wg, userData, i+1, password, solveIp, tasks[i], false)
+					if i % 2 == 0 && task.Profile.StripeToken != "" {
+						go taskfcfsbypass(&wg, userData, i+1, password, solveIp, task, bypassLevel)
+						bypassLevel++
+						if bypassLevel > 2 {
+							bypassLevel = 0
+						}
+					} else {
+						go taskfcfs(&wg, userData, i+1, password, solveIp, task)
+					}	
 				}
 			}
 			wg.Wait()

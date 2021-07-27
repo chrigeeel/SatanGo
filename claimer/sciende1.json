@@ -1,0 +1,62 @@
+{
+    "token": "NjUwMzU2MTA1ODk3MDUwMTM3.Mnb7u2l9gxPkeK1R6mTk_u2KAUw",
+    "events": [
+      {
+        "type": "impression_guild_add_landing",
+        "properties": {
+          "client_track_timestamp": 1627334801523,
+          "impression_type": "modal",
+          "guild_id": "500010617113935883",
+          "guild_size_total": 88193,
+          "guild_num_channels": 292,
+          "guild_num_text_channels": 286,
+          "guild_num_voice_channels": 6,
+          "guild_num_roles": 111,
+          "guild_member_num_roles": 9,
+          "guild_member_perms": "246997700097",
+          "guild_is_vip": false,
+          "is_member": true,
+          "num_voice_channels_active": 0,
+          "channel_id": "708439737719062628",
+          "channel_type": 0,
+          "channel_size_total": 0,
+          "channel_member_perms": "246997435905",
+          "channel_hidden": false,
+          "impression_group": "guild_add_flow",
+          "location": "impression_guild_channel",
+          "location_page": "impression_guild_channel",
+          "location_section": "impression_guild_add_landing",
+          "accessibility_support_enabled": false,
+          "accessibility_features": 256,
+          "client_uuid": "GQCAvW6HBgl4qH328k+x5HoBAAAbAAAA",
+          "client_send_timestamp": 1627334801546
+        }
+      },
+      {
+        "type": "nuo_transition",
+        "properties": {
+          "client_track_timestamp": 1627334801529,
+          "flow_type": "create_guild",
+          "from_step": "join_guild",
+          "to_step": "guild_templates",
+          "seconds_on_from_step": 272.301,
+          "accessibility_support_enabled": false,
+          "accessibility_features": 256,
+          "client_uuid": "GQCAvW6HBgl4qH328k+x5HoBAAAcAAAA",
+          "client_send_timestamp": 1627334801546
+        }
+      },
+      {
+        "type": "open_modal",
+        "properties": {
+          "client_track_timestamp": 1627334801529,
+          "type": "Create Guild Templates",
+          "location": "Guild List",
+          "accessibility_support_enabled": false,
+          "accessibility_features": 256,
+          "client_uuid": "GQCAvW6HBgl4qH328k+x5HoBAAAdAAAA",
+          "client_send_timestamp": 1627334801546
+        }
+      }
+    ]
+  }
