@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
@@ -15,6 +16,8 @@ import (
 
 func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, key string, profile loader.ProfileStruct) {
 	defer wg.Done()
+
+	beginTime := time.Now()
 
 	type checkoutDataStruct struct {
 		DiscordId string `json:"discordId"`
@@ -60,21 +63,13 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, key st
 		return
 	}
 	fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully claimed key on profile ") + colors.White("\"") + colors.Green(profile.Name) + colors.White("\""))
-	go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-		Speed:   "idk bro",
-		Module:  "Wrath",
-		Site:    "Wrath",
+	stopTime := time.Now()
+	diff := stopTime.Sub(beginTime)
+	go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+		Site: "Wrath",
+		Module: "Wrath",
+		Mode: "Normal",
+		Time: diff.String(),
 		Profile: profile.Name,
 	})
-	payload, _ = json.Marshal(map[string]string{
-		"site":     "Wrath",
-		"module":   "Wrath",
-		"speed":    "idk",
-		"mode":     "Normal",
-		"password": "Unknown",
-		"user":     userData.Username,
-	})
-	req, _ = http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-	req.Header.Set("content-type", "application/json")
-	client.Do(req)
 }

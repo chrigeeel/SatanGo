@@ -14,14 +14,17 @@ import (
 	"github.com/chrigeeel/satango/utility"
 )
 
-func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, releaseId string, paid bool, collectBilling bool, site string, hyperAccountId string, profile loader.ProfileStruct, bpToken string) {
+func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, releaseId string, password string, paid bool, collectBilling bool, site string, hyperAccountId string, profile loader.ProfileStruct, bpToken string) {
 	defer wg.Done()
-
-	fmt.Println("cool task")
 
 	beginTime := time.Now()
 
-	checkoutData := HyperCheckoutStruct{}
+	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading Release..."))
+
+	checkoutData := HyperCheckoutStruct{
+		Mode: "link",
+		Password: password,
+	}
 
 	checkoutData.Billing_details.Email = profile.BillingAddress.Email
 	checkoutData.Billing_details.Name = profile.BillingAddress.Name
@@ -48,8 +51,6 @@ func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, re
 	payload, _ := json.Marshal(checkoutData)
 
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Submitting Checkout..."))
-
-	fmt.Println(site + "ajax/checkouts")
 
 	req, err := http.NewRequest("POST", site+"ajax/checkouts", bytes.NewBuffer(payload))
 	if err != nil {
@@ -87,6 +88,9 @@ func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, re
 		return
 	}
 
+	stopTime := time.Now()
+	diff := stopTime.Sub(beginTime)
+
 	for {
 		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Processing..."))
 		req, err := http.NewRequest("GET", site+"ajax/checkouts/"+rdata.ID, nil)
@@ -107,26 +111,14 @@ func taskfcfsCool(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, re
 		json.Unmarshal([]byte(body), &rdata)
 		if rdata.Status != "processing" {
 			if rdata.Status == "succeeded" {
-				stopTime := time.Now()
-				diff := stopTime.Sub(beginTime)
 				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile \""+colors.White(profile.Name)+colors.Green("\"")))
-				go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-					Speed:   diff.String(),
-					Module:  "Hyper / Meta Labs",
-					Site:    site,
+				go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+					Site: site,
+					Module: "Hyper",
+					Mode: "Bypass",
+					Time: diff.String(),
 					Profile: profile.Name,
 				})
-				payload, _ := json.Marshal(map[string]string{
-					"site":     site,
-					"module":   "Hyper / Meta Labs",
-					"speed":    diff.String(),
-					"mode":     "Normal",
-					"password": "Unknown",
-					"user":     userData.Username,
-				})
-				req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-				req.Header.Set("content-type", "application/json")
-				client.Do(req)
 				return
 			}
 			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \""+colors.White(profile.Name)+colors.Red("\" Reason: "+rdata.Status+" (This means either OOS or already registered!)")))

@@ -18,7 +18,7 @@ import (
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct) {
 	profiles = utility.AskForProfiles(profiles)
 	fmt.Println(colors.Prefix() + colors.Yellow("Logging in on all profiles..."))
-	profiles = hyper.Login("-bnFqbJnHz", "https://dashboard.satanbots.com/", profiles)
+	profiles = hyper.Login("RQyuOz8FmunrZMrdkwBaC", "https://botsandmonitors.metalabs.gg/", profiles)
 	if len(profiles) == 0 {
 		fmt.Println(colors.Prefix() + colors.Red("You have no valid Profiles! Please check them and their corresponding Discord Tokens!"))
 		time.Sleep(time.Second * 3)

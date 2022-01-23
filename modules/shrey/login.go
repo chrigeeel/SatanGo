@@ -55,8 +55,6 @@ func login(profiles []loader.ProfileStruct, site string) []loader.ProfileStruct 
 				shreyAuthSession = cookie.Value
 			}
 		}
-
-		//=--------------------------------------------------
 		
 		req, err = http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -99,9 +97,6 @@ func login(profiles []loader.ProfileStruct, site string) []loader.ProfileStruct 
 				shreyAuthSession = cookie.Value
 			}
 		}
-
-		//=--------------------------------------------------
-
 		req, err = http.NewRequest("GET", url, nil)
 		if err != nil {
 			profiles[id].DiscordSession = "error"
@@ -117,14 +112,7 @@ func login(profiles []loader.ProfileStruct, site string) []loader.ProfileStruct 
 		req.Header.Add("Sec-Fetch-Dest", "document")
 		req.Header.Add("sec-ch-ua", "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"91\", \"Chromium\";v=\"91\"")
 		req.Header.Add("sec-ch-ua-mobile", "?0")
-		//req.Header.Add("Cookie", "_shreyauth_session=" + shreyAuthSession)
-		resp, err = client.Do(req)
-		if err != nil {
-			profiles[id].DiscordSession = "error"
-			fmt.Println(colors.Prefix() + colors.Red("Invalid Discord Token on profile ") + colors.White(profiles[id].Name) + colors.Red(" - Not running tasks on this profile"))
-			return
-		}
-		body, err = ioutil.ReadAll(resp.Body)
+		_, err = client.Do(req)
 		if err != nil {
 			profiles[id].DiscordSession = "error"
 			fmt.Println(colors.Prefix() + colors.Red("Invalid Discord Token on profile ") + colors.White(profiles[id].Name) + colors.Red(" - Not running tasks on this profile"))
@@ -137,9 +125,7 @@ func login(profiles []loader.ProfileStruct, site string) []loader.ProfileStruct 
 			}
 		}
 
-		//=--------------------------------------------------
-
-		r, _ = regexp.Compile(`\?code=(\w*)`)
+		r = regexp.MustCompile(`\?code=(\w*)`)
 		url = "https://discord.com/api/v9/oauth2/authorize?client_id=601262335713345542&response_type=code&redirect_uri=https%3A%2F%2Fshreyauth.com%2Fdiscord%2Fconnect&scope=identify%20email%20guilds%20guilds.join"
 
 		payload, _ := json.Marshal(map[string]string{
@@ -192,25 +178,12 @@ func login(profiles []loader.ProfileStruct, site string) []loader.ProfileStruct 
 		req.Header.Add("Sec-Fetch-User", "?1")
 		req.Header.Add("Sec-Fetch-Dest", "document")
 		req.Header.Add("Cookie", "_shreyauth_session=" + shreyAuthSession2)
-		resp, err = client.Do(req)
+		_, err = client.Do(req)
 		if err != nil {
 			profiles[id].DiscordSession = "error"
 			fmt.Println(colors.Prefix() + colors.Red("Invalid Discord Token on profile ") + colors.White(profiles[id].Name) + colors.Red(" - Not running tasks on this profile"))
 			return
 		}
-		body, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			profiles[id].DiscordSession = "error"
-			fmt.Println(colors.Prefix() + colors.Red("Invalid Discord Token on profile ") + colors.White(profiles[id].Name) + colors.Red(" - Not running tasks on this profile"))
-			return
-		}
-		for _, cookie := range resp.Cookies() {
-			if cookie.Name == "_shreyauth_session" {
-				shreyAuthSession2 = cookie.Value
-			}
-		}
-
-		//=--------------------------------------------------
 
 		url = site + "discord/complete?code=" + code
 

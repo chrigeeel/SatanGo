@@ -69,6 +69,7 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 	TLUrl := "https://button-backend.tldash.ai/api/purchase/" + site + "/" + password
 	req, err := http.NewRequest("GET", TLUrl, nil)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
 		return
 	}
@@ -80,6 +81,7 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 
 	resp, err := client.Do(req)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
 		return
 	}
@@ -87,6 +89,7 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
 		return
 	}
@@ -269,23 +272,13 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, passwo
 		stopTime := time.Now()
 		diff := stopTime.Sub(beginTime)
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile ") + colors.White("\"") + colors.Green(profile.Name) + colors.White("\""))
-		go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-			Speed:   diff.String(),
-			Module:  "TL Dashboards",
-			Site:    site,
+		go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+			Site: site,
+			Module: "TLDash",
+			Mode: "Normal",
+			Time: diff.String(),
 			Profile: profile.Name,
 		})
-		payload, _ := json.Marshal(map[string]string{
-			"site":     task.Site,
-			"module":   "TL Dash",
-			"speed":    diff.String(),
-			"mode":     "Brr mode",
-			"password": "Unknown",
-			"user":     userData.Username,
-		})
-		req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-		req.Header.Set("content-type", "application/json")
-		client.Do(req)
 		return
 	}
 	if postResponse.Error.Message != "" {
@@ -392,25 +385,14 @@ func taskfcfsbypass(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, 
 	if postResponse.Success {
 		stopTime := time.Now()
 		diff := stopTime.Sub(beginTime)
-		fmt.Println(colors.TaskPrefix(id) + colors.Green("THE BYPASS WORKED!! PLEASE GIVE Chrigeeel#9456 A KISS AND POST #SUCCESS"))
 		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile ") + colors.White("\"") + colors.Green(profile.Name) + colors.White("\""))
-		go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-			Speed:   diff.String(),
-			Module:  "TL Dashboards - Bypass",
-			Site:    site,
+		go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+			Site: site,
+			Module: "TLDash",
+			Mode: "Bypass",
+			Time: diff.String(),
 			Profile: profile.Name,
 		})
-		payload, _ := json.Marshal(map[string]string{
-			"site":     task.Site,
-			"module":   "TL Dash",
-			"speed":    diff.String(),
-			"mode":     "Bypass",
-			"password": "Unknown",
-			"user":     userData.Username,
-		})
-		req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-		req.Header.Set("content-type", "application/json")
-		client.Do(req)
 		return
 	}
 	if postResponse.Error.Message != "" {

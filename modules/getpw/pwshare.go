@@ -15,7 +15,7 @@ import (
 )
 
 var LastPass string
-var Share bool = true
+var Share bool = false
 
 var addr = "52.45.120.253:8080"
 
@@ -31,6 +31,9 @@ func PWShareConnectReceive(wg *sync.WaitGroup, userData loader.UserDataStruct) {
 	
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 		if err != nil {
+			if i == 0 {
+				wg.Done()
+			}
 			fmt.Println(colors.Prefix() + colors.Red("Failed connecting to PWSharing Server!"))
 			return
 		}

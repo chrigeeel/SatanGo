@@ -35,6 +35,7 @@ func GetPw2(site string) PWStruct {
 	lookingForPw = true
 	r := regexp.MustCompile("(?i)password=\n*?\\s*?(\\S+)")
 	r2 := regexp.MustCompile(`\/purchase\/([^\?]*)`)
+	r4 := regexp.MustCompile(`hpr\.co\/([^\?]*)`)
 	for {
 		p := <- PWC
 		if p.Site == site || p.Mode == "clipboard" || p.Mode == "extension" {
@@ -51,13 +52,15 @@ func GetPw2(site string) PWStruct {
 			if len(m2) == 2 {
 				releaseId = m2[1]
 			}
+			m3 := r4.FindStringSubmatch(p.Password)
+			if len(m3) == 2 {
+				releaseId = m3[1]
+			}
 			password = strings.ReplaceAll(password, " ", "")
 			password = strings.ReplaceAll(password, "\n", "")
 			password = strings.ReplaceAll(password, "\r", "")
 			p.Password = password
-			if p.Mode != "extension" {
-				p.HyperInfo.ReleaseId = releaseId
-			}
+			p.HyperInfo.ReleaseId = releaseId
 			
 			fmt.Println(colors.Prefix() + colors.White("Detected password \"") + colors.Red(password) + colors.White("\""))
 			lookingForPw = false
@@ -69,7 +72,19 @@ func GetPw2(site string) PWStruct {
 			if len(m) == 2 {
 				password = m[1]
 			} else {
-				continue
+				m2 := r2.FindStringSubmatch(p.Password)
+				if len(m2) == 2 {
+					releaseId = m2[1]
+					p.HyperInfo.ReleaseId = releaseId
+				} else {
+					m3 := r4.FindStringSubmatch(p.Password)
+					if len(m3) == 2 {
+						releaseId = m3[1]
+						p.HyperInfo.ReleaseId = releaseId
+					} else {
+						continue
+					}
+				}
 			}
 			r3 := regexp.MustCompile(`[^\/]*\.[^\/]*\.?[^\/]*`)
 			siteB := string(r3.Find([]byte(site)))
@@ -122,6 +137,58 @@ func GetPwAfk() PWStruct {
 		}
 		if p.Password == "exit" {
 			return p
+		}
+	}
+}
+
+func GetInvite() string {
+	fmt.Println(colors.Prefix() + colors.Red("Waiting for invite"))
+	fmt.Println(colors.Prefix() + colors.White("Copy the text \"") + colors.Red("exit") + colors.White("\" to exit"))
+	for {
+		p := <- PWC
+		if p.Mode != "clipboard" {
+			continue
+		}
+		return p.Password
+	}
+}
+
+func GetKey(prefix string) string {
+	fmt.Println(colors.Prefix() + colors.Red("Waiting for key"))
+	fmt.Println(colors.Prefix() + colors.White("Copy the text \"") + colors.Red("exit") + colors.White("\" to exit"))
+	r1 := regexp.MustCompile(prefix + `(-[^-\n]{3,6}){3,6}`)
+	for {
+		p := <- PWC
+		if p.Mode == "clipboard" {
+			key := p.Password
+			m1 := r1.FindString(key)
+			if m1 == "" {
+				if strings.HasPrefix(key, "-") {
+					key = prefix + key
+				} else {
+					key = prefix + "-" + key
+				}
+			} else {
+				key = m1
+			}
+			key = strings.ReplaceAll(key, "\n", "")
+			key = strings.ReplaceAll(key, "\r", "")
+			key = strings.ReplaceAll(key, " ", "")
+			fmt.Println(colors.Prefix() + colors.White("Detected key \"") + colors.Red(key) + colors.White("\""))
+			return key
+		}
+		if p.Mode == "discord" {
+			content := p.Password
+			m1 := r1.FindString(content)
+			if m1 == "" {
+				continue
+			}
+			key := m1
+			key = strings.ReplaceAll(key, "\n", "")
+			key = strings.ReplaceAll(key, "\r", "")
+			key = strings.ReplaceAll(key, " ", "")
+			fmt.Println(colors.Prefix() + colors.White("Detected key \"") + colors.Red(key) + colors.White("\""))
+			return m1
 		}
 	}
 }

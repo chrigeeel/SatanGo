@@ -22,7 +22,10 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, p getp
 
 	beginTime := time.Now()
 
-	checkoutData := hyper.HyperCheckoutStruct{}
+	checkoutData := hyper.HyperCheckoutStruct{
+		Mode: "link",
+		Password: p.Password,
+	}
 
 	checkoutData.Billing_details.Email = profile.BillingAddress.Email
 	checkoutData.Billing_details.Name = profile.BillingAddress.Name
@@ -102,23 +105,13 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, p getp
 				stopTime := time.Now()
 				diff := stopTime.Sub(beginTime)
 				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile \""+colors.White(profile.Name)+colors.Green("\"")))
-				go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-					Speed:   diff.String(),
-					Module:  "Hyper / Meta Labs",
-					Site:    p.Site,
+				go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+					Site: p.Site,
+					Module: "Hyper",
+					Mode: "AFK",
+					Time: diff.String(),
 					Profile: profile.Name,
 				})
-				payload, _ := json.Marshal(map[string]string{
-					"site":     p.Site,
-					"module":   "Hyper / Meta Labs",
-					"speed":    diff.String(),
-					"mode":     "Normal",
-					"password": "Unknown",
-					"user":     userData.Username,
-				})
-				req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-				req.Header.Set("content-type", "application/json")
-				client.Do(req)
 				return
 			}
 			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \""+colors.White(profile.Name)+colors.Red("\" Reason: "+rdata.Status+" (This means either OOS or already registered!)")))
@@ -182,8 +175,10 @@ func taskfcfsunk(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, pas
 	}
 	fmt.Println(colors.TaskPrefix(id) + colors.Green("Release instock!"))
 
-	checkoutData := hyper.HyperCheckoutStruct{}
-
+	checkoutData := hyper.HyperCheckoutStruct{
+		Mode: "link",
+		Password: password,
+	}
 	checkoutData.Billing_details.Email = profile.BillingAddress.Email
 	checkoutData.Billing_details.Name = profile.BillingAddress.Name
 
@@ -268,23 +263,13 @@ func taskfcfsunk(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, pas
 				stopTime := time.Now()
 				diff := stopTime.Sub(beginTime)
 				fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile \""+colors.White(profile.Name)+colors.Green("\"")))
-				go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-					Speed:   diff.String(),
-					Module:  "Hyper / Meta Labs",
-					Site:    site,
+				go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+					Site: site,
+					Module: "Hyper",
+					Mode: "AFK",
+					Time: diff.String(),
 					Profile: profile.Name,
 				})
-				payload, _ := json.Marshal(map[string]string{
-					"site":     site,
-					"module":   "Hyper / Meta Labs",
-					"speed":    diff.String(),
-					"mode":     "Normal",
-					"password": "Unknown",
-					"user":     userData.Username,
-				})
-				req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-				req.Header.Set("content-type", "application/json")
-				client.Do(req)
 				return
 			}
 			fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to check out on profile \""+colors.White(profile.Name)+colors.Red("\" Reason: "+rdata.Status+" (This means either OOS or already registered!)")))

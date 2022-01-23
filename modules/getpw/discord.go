@@ -62,6 +62,7 @@ func messageHandler(s *cooldiscord.Session, m *cooldiscord.MessageCreate) {
 	content = strings.ReplaceAll(content, "\n", "")
 	content = strings.ReplaceAll(content, "\r", "")
 	content = strings.ReplaceAll(content, "Join", "")
+	content = strings.ReplaceAll(content, "Checkout", "")
 	p := PWStruct{
 		Password: content,
 		Mode: "discord",

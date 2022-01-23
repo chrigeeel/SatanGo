@@ -1,7 +1,10 @@
 package hyper
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -13,6 +16,7 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
+	"github.com/chrigeeel/satango/structs"
 	"github.com/chrigeeel/satango/utility"
 )
 
@@ -26,7 +30,9 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		os.Exit(3)
 	}
 	fmt.Println(colors.Prefix() + colors.Red("What site would you like to start tasks on?") + colors.White(" (example: \"dashboard.satanbots.com\")"))
+	
 	site := utility.AskForSilent()
+
 	r := regexp.MustCompile(`[^\/]*\.[^\/]*\.?[^\/]*`)
 	siteB := r.Find([]byte(site))
 	if siteB == nil {
@@ -34,8 +40,56 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		return
 	}
 	site = "https://" + string(siteB) + "/"
+	go func() {
+		webhookData := structs.Webhook{
+			Username: "SatanBots",
+			AvatarURL: "https://i.imgur.com/sNZJzJ2.png",
+			Embeds: []*structs.Embed{
+				{
+					Title: "User started Hyper tasks",
+					Fields: []*structs.Field{
+						{
+							Name: "Site",
+							Value: site,
+						},
+						{
+							Name: "Username",
+							Value: userData.Username,
+						},
+						{
+							Name: "Discord ID",
+							Value: userData.DiscordId,
+						},
+						{
+							Name: "Key",
+							Value: userData.Key,
+						},
+						{
+							Name: "Version",
+							Value: userData.Version,
+						},
+					},
+					Thumbnail: &structs.Thumbnail{},
+				},
+			},
+		}
+
+		jsonData, err := json.Marshal(webhookData)
+		if err != nil {
+			return
+		}
+	
+		req, err := http.NewRequest("POST", "https://discord.com/api/webhooks/874612645582487582/l1lkCV2fhwUNegjMAamAKXhg3lEKXFbDDKN1RsOI1QQdYKMf2xfRCJAs1J7DWpgLeX72", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return
+		}
+		req.Header.Set("content-type", "application/json")
+		http.DefaultClient.Do(req)
+	}()
 	fmt.Println(colors.Prefix() + colors.Red("(Y/N) Is the release you're going for paid?"))
+	
 	ans := utility.AskForSilent()
+
 	var paid bool
 	if strings.ToLower(ans)[0:1] == "y" {
 		paid = true
@@ -80,14 +134,14 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 		time.Sleep(time.Second * 3)
 		return
 	}
-
+	
 	var taskLimit int = len(profiles) * 2
 
 	fmt.Println(colors.Prefix() + colors.Red("How many tasks do you want to run? Your task limit is ") + colors.White(strconv.Itoa(taskLimit)) + colors.Red(" because you have ") + colors.White(strconv.Itoa(len(profiles))) + colors.Red(" valid profiles"))
 
-	var taskAmount int
+	var taskAmount int = 1
 	for validAns := false; !validAns; {
-		ans = utility.AskForSilent()
+		ans := utility.AskForSilent()
 		validAns = true
 		ansInt, _ := strconv.Atoi(ans)
 		if !govalidator.IsInt(ans) {
@@ -119,11 +173,11 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, prox
 					wg.Add(1)
 					go taskfcfsShare(&wg, userData, i+1, p, profiles[profileCounter])
 				} else {
-					if releaseId != "" && (userData.Key == "SATAN-PRSF-JLE5-ICJU-M85H" || userData.Key == "GCGK-T824-E6CC-DUBG") {
+					if releaseId != "" && password != "" {
 						wg.Add(1)
-						go taskfcfsCool(&wg, userData, i+1, releaseId, paid, false, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+						go taskfcfsCool(&wg, userData, i+1, releaseId, password, paid, false, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
 						wg.Add(1)
-						go taskfcfsCool(&wg, userData, i+1, releaseId, paid, true, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
+						go taskfcfsCool(&wg, userData, i+1, releaseId, password, paid, true, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)
 					} else {
 						wg.Add(1)
 						go taskfcfs(&wg, userData, i+1, password, paid, site, loadPage.Props.Pageprops.Account.ID, profiles[profileCounter], bpToken)

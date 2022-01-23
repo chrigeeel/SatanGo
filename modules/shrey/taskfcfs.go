@@ -13,10 +13,13 @@ import (
 	"github.com/chrigeeel/satango/colors"
 	"github.com/chrigeeel/satango/loader"
 	"github.com/chrigeeel/satango/modules/getpw"
+	"github.com/chrigeeel/satango/utility"
 )
 
 func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, p getpw.PWStruct, profile loader.ProfileStruct, site string) {
 	defer wg.Done()
+
+	beginTime := time.Now()
 
 	payload := strings.NewReader("password=" + p.Password + "&authenticity_token=" + url.QueryEscape(profile.ShreyCSRF))
 
@@ -153,6 +156,9 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, p getp
 
 	rurl = site + "subscriptions/poll?cid=" + match[1]
 
+	stopTime := time.Now()
+	diff := stopTime.Sub(beginTime)
+
 	for i := 0; i < 100; i++ {
 		fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Processing..."))
 		req, err := http.NewRequest("GET", rurl, nil)
@@ -184,6 +190,13 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, p getp
 		match = r.FindStringSubmatch(string(body))
 		if len(match) == 2 {
 			fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out on profile ") + colors.White("\"") + colors.Green(profile.Name) + colors.White("\""))
+			go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+				Site: site,
+				Module: "Shrey",
+				Mode: "Normal",
+				Time: diff.String(),
+				Profile: profile.Name,
+			})
 			return
 		}
 		r = regexp.MustCompile(`\.text\("([^"]*)`)

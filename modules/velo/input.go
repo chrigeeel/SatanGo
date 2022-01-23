@@ -31,6 +31,16 @@ var veloSites = []siteStruct{
 		BackendName:       "dash.cryptoclub.group",
 		Stripe_public_key: "pk_live_51IibakGMt5G1CmqPqzOg6k2RKavZa2PF2BoQ0c5BM53GKANiJCGq7CZwL1uHAzjjcAYD4jaCYsYtsa6M3QV7ivMX00n8thUefS",
 	},
+	{
+		DisplayName:       "Lumen",
+		BackendName:       "dash.stellaraio.group",
+		Stripe_public_key: "pk_live_51Idj8iGNqrK0CQYirqWCb6jK0ZlrW30HaUMlTg6YEm0lvUaNtktEerPM5DOSkLKcQcU345Ipj41D1VmlwXkWFwPi00Jz3GrJCS",
+	},
+	{
+		DisplayName:       "Velo",
+		BackendName:       "versusfnf.io",
+		Stripe_public_key: "pk_live_Zztx90CWU6pPnsRBZcWm1DSE00s2fTsNbc",
+	},
 }
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct, proxies []string) {

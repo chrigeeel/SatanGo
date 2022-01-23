@@ -47,13 +47,25 @@ func LoadProfiles() []ProfileStruct {
 		fmt.Println(colors.Prefix() + colors.Red("No profiles set up!"))
 		var profiles []ProfileStruct
 		CreateProfile(profiles)
+		return LoadProfiles()
 	}
 	defer profilesFile.Close()
-	profilesBytes, _ := ioutil.ReadAll(profilesFile)
+	profilesBytes, err := ioutil.ReadAll(profilesFile)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
+		return []ProfileStruct{}
+	}
 	var profiles []ProfileStruct
-	json.Unmarshal(profilesBytes, &profiles)
+	err = json.Unmarshal(profilesBytes, &profiles)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
+		return []ProfileStruct{}
+	}
 	jsonData, err := json.MarshalIndent(profiles, "", "    ")
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
 		return []ProfileStruct{}
 	}
@@ -63,6 +75,7 @@ func LoadProfiles() []ProfileStruct {
 	}
 	err = ioutil.WriteFile("./settings/profiles.json", jsonData, 0644)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println(colors.Prefix() + colors.Red("You profiles aren't formatted correctly! Please make a ticket if you need help."))
 		return []ProfileStruct{}
 	}

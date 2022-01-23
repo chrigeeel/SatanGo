@@ -22,6 +22,7 @@ type siteStruct struct {
 	DisplayName string `json:"displayName"`
 	ClientID string `json:"clientId"`
 	URL string `json:"url"`
+	Prefix string `json:"prefix"`
 }
 
 func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct) {
@@ -105,8 +106,8 @@ func Input(userData loader.UserDataStruct, profiles []loader.ProfileStruct) {
 	var profileCounter int
 
 	for exit := false; !exit; {
-		key := getpw.GetPw2(site.DisplayName).Password
-		if key == "exit" {
+		key := getpw.GetKey(site.Prefix)
+		if key == site.Prefix + "-exit" {
 			exit = true
 		} else {
 			fmt.Println(colors.Prefix() + colors.Yellow("Starting tasks..."))

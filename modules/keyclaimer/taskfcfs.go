@@ -60,21 +60,11 @@ func taskfcfs(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, key st
 	fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully claimed key on profile ") + colors.White("\"") + colors.Green(profile.Name) + colors.White("\""))
 	stopTime := time.Now()
 	diff := stopTime.Sub(beginTime)
-	go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-		Speed:   diff.String(),
-		Module:  "Key Claimer",
-		Site:    site.DisplayName,
+	go utility.NewSuccess(userData.Webhook, utility.SuccessStruct{
+		Site: site.DisplayName,
+		Module: "Key Claimer",
+		Mode: "Normal",
+		Time: diff.String(),
 		Profile: profile.Name,
 	})
-	payload, _ = json.Marshal(map[string]string{
-		"site":     site.DisplayName,
-		"module":   "Key Claimer",
-		"speed":    diff.String(),
-		"mode":     "Normal",
-		"password": "Unknown",
-		"user":     userData.Username,
-	})
-	req, _ = http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-	req.Header.Set("content-type", "application/json")
-	client.Do(req)
 }

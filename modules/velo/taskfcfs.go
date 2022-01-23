@@ -1,7 +1,6 @@
 package velo
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -35,8 +34,6 @@ func VeloTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, site s
 		return
 	}
 
-	//beginTime := time.Now()
-
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Loading Release..."))
 
 	VUrl := "https://api.velo.gg/api/purchase/create?password=" + password + "&referral=null"
@@ -66,12 +63,10 @@ func VeloTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, site s
 	var getResponse getResponseStruct
 	json.Unmarshal([]byte(body), &getResponse)
 
-	if getResponse.Success == false {
+	if !getResponse.Success {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Wrong password or release OOS!"))
 		return
 	}
-
-	fmt.Println(getResponse.Checkout)
 
 	pwData := getpw.PWStruct{
 		Username: userData.Username,
@@ -90,27 +85,24 @@ func VeloTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, site s
 			`&key=` + site.Stripe_public_key)
 
 	req, err = http.NewRequest("POST", confirmUrl, payload)
+	if err != nil {
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to submit Stripe!"))
+	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err = client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to submit Stripe!"))
 		return
 	}
 	defer resp.Body.Close()
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
 	fmt.Println(colors.TaskPrefix(id) + colors.Yellow("Confirming Order..."))
 
 	processUrl := "https://api.velo.gg/api/process?type=checkout&checkoutSession=" + getResponse.Checkout + "&password=" + password + "&appliedCode=null"
 	req, err = http.NewRequest("GET", processUrl, nil)
 	if err != nil {
-		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to confirm order!"))
 		return
 	}
 
@@ -120,43 +112,26 @@ func VeloTask(wg *sync.WaitGroup, userData loader.UserDataStruct, id int, site s
 
 	resp, err = client.Do(req)
 	if err != nil {
-		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to confirm order!"))
 		return
 	}
 	defer resp.Body.Close()
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to load release!"))
+		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to confirm order!"))
 		return
 	}
 
 	var checkoutResponse checkoutResponseStruct
 	json.Unmarshal([]byte(body), &checkoutResponse)
 
-	if checkoutResponse.Success == true {
-		fmt.Println(colors.TaskPrefix(id) + colors.Green("Successfully checked out! Please give a kiss to Chrigeeel and check email"))
-		go utility.SendWebhook(userData.Webhook, utility.WebhookContentStruct{
-			Speed:   "bruh idk bro",
-			Module:  "Velo",
-			Site:    site.DisplayName,
-			Profile: profile.Name,
-		})
-		payload, _ := json.Marshal(map[string]string{
-			"site":     site.DisplayName,
-			"module":   "Velo",
-			"speed":    "idk bro",
-			"mode":     "Brr mode",
-			"password": "Unknown",
-			"user":     userData.Username,
-		})
-		req, _ := http.NewRequest("POST", "http://ec2-13-52-240-112.us-west-1.compute.amazonaws.com:3000/checkouts", bytes.NewBuffer(payload))
-		req.Header.Set("content-type", "application/json")
-		client.Do(req)
+	if checkoutResponse.Success {
+		fmt.Println(colors.TaskPrefix(id) + colors.Green("Maybe checked out! Please check your email to confirm and post #success"))
 		return
 	}
 
-	if checkoutResponse.Success == false {
+	if !checkoutResponse.Success {
 		fmt.Println(colors.TaskPrefix(id) + colors.Red("Failed to checkout :/ Maybe still success though idk how to log success correctly, check email!!!"))
 		return
 	}

@@ -16,7 +16,7 @@ func AskForSilent() string {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print(colors.Prefix() + colors.White("> "))
 	scanner.Scan()
-	return scanner.Text()
+	return strings.ReplaceAll(scanner.Text(), "\"", "")
 }
 
 func AskForProfiles(profiles []loader.ProfileStruct) []loader.ProfileStruct {
@@ -27,7 +27,7 @@ func AskForProfiles(profiles []loader.ProfileStruct) []loader.ProfileStruct {
 	fmt.Println(colors.Prefix() + colors.Red("Sample input: ") + colors.White("\"") + colors.Red("1, 2, 5") + colors.White("\" ") + colors.Red("or ") + colors.White("\"") + colors.Red("all") + colors.White("\""))
 	var newProfiles []loader.ProfileStruct
 	var indexes []int
-	for validAns := false; validAns == false; {
+	for validAns := false; !validAns; {
 		ans := AskForSilent()
 		validAns = true
 		if strings.ToLower(ans) == "all" {
@@ -39,7 +39,7 @@ func AskForProfiles(profiles []loader.ProfileStruct) []loader.ProfileStruct {
 		ans = strings.ReplaceAll(ans, " ", "")
 		plist1 := strings.Split(ans, ",")
 		for i := range plist1 {
-			if govalidator.IsInt(plist1[i]) == false {
+			if !govalidator.IsInt(plist1[i]) {
 				fmt.Println(colors.Prefix() + colors.Red("Wrong input!"))
 				validAns = false
 			} else {

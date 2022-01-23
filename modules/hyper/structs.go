@@ -24,6 +24,7 @@ type HyperStruct struct {
 	Query struct {
 		Token   string `json:"token"`
 		Release string `json:"release"`
+		Link    string `json:"link"`
 	} `json:"query"`
 }
 type HyperCheckoutStruct struct {
@@ -42,4 +43,6 @@ type HyperCheckoutStruct struct {
 	Payment_method string `json:"payment_method,omitempty"`
 	User           string `json:"user,omitempty"`
 	Release        string `json:"release"`
+	Password       string `json:"password"`
+	Mode           string `json:"mode"`
 }

@@ -7,6 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gofiber/fiber/v2 v2.12.0
