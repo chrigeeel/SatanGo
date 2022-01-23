@@ -58,7 +58,6 @@ func debugChecker() {
 				os.Exit(3)
 			}
 		}
-
 	}
 }
 
